@@ -1,0 +1,27 @@
+{{if ispage}}<!DOCTYPE html>
+<html lang="{{:current_lang}}" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{block "title"}}{{:l10n.app_name}}{{endblock}}</title>
+  <link rel="icon" href="/static/favicon.ico">
+  <link rel="stylesheet" href="/static/css/bulma.min.css">
+  <link rel="stylesheet" href="/static/css/app.css">
+  {{block "styles"}}{{endblock}}
+</head>
+<body>
+  {{include "../partials/_navbar.html"}}
+  <main class="section">
+    <div class="container">
+      {{include "../partials/_flash_messages.html"}}
+      {{endif}}
+      {{block "content"}}{{endblock}}
+      {{if ispage}}
+    </div>
+  </main>
+  {{include "../partials/_footer.html"}}
+  <script src="/static/js/htmx.min.js"></script>
+  <script src="/static/js/app.js"></script>
+  {{block "scripts"}}{{endblock}}
+</body>
+</html>{{endif}}

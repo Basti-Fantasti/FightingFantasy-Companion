@@ -1,0 +1,20 @@
+/* Touch-friendly button — used for mobile-primary actions (dice, log step, etc.) */
+.is-touch {
+  min-width: 48px;
+  min-height: 48px;
+  font-size: 1.25rem;
+}
+
+/* Soft-undo visual state — applied to timeline entries after Undo */
+.is-undone {
+  text-decoration: line-through;
+  opacity: 0.5;
+}
+
+/* Cytoscape graph canvas — fixed height so Cytoscape can compute layout */
+#graph-canvas {
+  width: 100%;
+  height: 600px;
+  border: 1px solid hsl(0, 0%, 86%);
+  background: hsl(0, 0%, 98%);
+}
