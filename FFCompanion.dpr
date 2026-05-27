@@ -4,14 +4,14 @@ program FFCompanion;
 
 uses
   System.SysUtils,
+  Web.HTTPApp,
+  Web.WebReq,
+  Web.WebBroker,
   MVCFramework.Logger,
   MVCFramework.Commons,
   MVCFramework.Signal,
   MVCFramework.SQLGenerators.Sqlite,
   IdHTTPWebBrokerBridge,
-  Web.HTTPApp,
-  Web.WebReq,
-  Web.WebBroker,
   WebModuleU in 'webmodule\WebModuleU.pas' {FFWebModule: TWebModule},
   AppConfigU in 'config\AppConfigU.pas';
 
@@ -38,6 +38,9 @@ begin
     RunServer(TAppConfig.HttpPort);
   except
     on E: Exception do
+    begin
       Writeln(E.ClassName, ': ', E.Message);
+      ExitCode := 1;
+    end;
   end;
 end.

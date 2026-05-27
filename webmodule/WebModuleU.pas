@@ -1,3 +1,28 @@
+{*******************************************************************************
+  Unit Name: WebModuleU
+  Purpose: WebBroker module hosting the DMVCFramework engine for FFCompanion
+
+  Author: Bastian Teufel
+  Created: 2026-05-27
+
+  Copyright (c) 1984-2026 GTR mbH
+
+  Description:
+    Defines TFFWebModule, the WebBroker TWebModule descendant that creates and
+    configures the central TMVCEngine instance: TemplatePro view engine, static
+    file middleware, and in-memory session middleware. Controllers are
+    registered here in subsequent phases.
+
+    Project naming convention: this project uses the U-SUFFIX style for unit
+    names (e.g. WebModuleU, AppConfigU, Controllers.AuthU) to match the
+    DMVCFramework sample convention. New units should follow the same pattern.
+
+  Dependencies:
+    - DMVCFramework (MVCFramework, MVCFramework.Commons, ...)
+    - Web.HTTPApp (WebBroker)
+    - AppConfigU
+*******************************************************************************}
+
 unit WebModuleU;
 
 interface
@@ -7,6 +32,10 @@ uses
   MVCFramework;
 
 type
+  /// <summary>
+  ///   WebBroker module that owns and configures the DMVCFramework engine
+  ///   (views, middlewares, controllers) for the FFCompanion application.
+  /// </summary>
   TFFWebModule = class(TWebModule)
     procedure WebModuleCreate(Sender: TObject);
     procedure WebModuleDestroy(Sender: TObject);
@@ -15,6 +44,7 @@ type
   end;
 
 var
+  /// WebBroker discovery hook: assigned to WebRequestHandler.WebModuleClass on startup.
   WebModuleClass: TComponentClass = TFFWebModule;
 
 implementation
