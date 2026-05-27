@@ -95,6 +95,8 @@
         <DCCReference Include="..\repositories\Repositories.StepsU.pas"/>
         <DCCReference Include="..\models\Models.StatChangeU.pas"/>
         <DCCReference Include="..\repositories\Repositories.StatChangesU.pas"/>
+        <DCCReference Include="..\models\Models.InventoryEventU.pas"/>
+        <DCCReference Include="..\repositories\Repositories.InventoryEventsU.pas"/>
         <DCCReference Include="..\services\Services.AdventureStateU.pas"/>
         <DCCReference Include="TestHelpers.DbU.pas"/>
         <DCCReference Include="Tests.L10nU.pas"/>
@@ -106,6 +108,7 @@
         <DCCReference Include="Tests.Repositories.AdventuresU.pas"/>
         <DCCReference Include="Tests.Repositories.StepsU.pas"/>
         <DCCReference Include="Tests.Services.AdventureStateU.pas"/>
+        <DCCReference Include="Tests.Services.AdventureStateU.Inventory.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

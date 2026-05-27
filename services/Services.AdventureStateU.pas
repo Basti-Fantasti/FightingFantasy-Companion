@@ -17,14 +17,19 @@
     per stat_def: seeded from stat_defs.default_value, then overwritten in
     chronological order by every non-undone stat change. Display names are
     resolved through TLocalizedTitleService using the supplied language tags.
-    GetCurrentInventory remains a stub until Task 8.1.
+    GetCurrentInventory folds inventory_events per item: 'gain' adds, 'lose'
+    subtracts, 'modify' sets an absolute quantity. Items whose final quantity
+    is zero or negative are omitted from the returned snapshot (but the
+    events stay in the database for audit). Item order in the result is
+    first-seen across the non-undone event timeline.
 
     Callers must Free the returned lists.
 
   Dependencies:
     - System.Generics.Collections
-    - Models.StatDefU, Models.StatChangeU
+    - Models.StatDefU, Models.StatChangeU, Models.InventoryEventU
     - Repositories.AdventuresU, Repositories.BooksU, Repositories.StatChangesU
+    - Repositories.InventoryEventsU
     - Services.LocalizedTitleU
     - FireDAC.Comp.Client
 *******************************************************************************}
@@ -92,9 +97,12 @@ type
 
     /// <summary>
     ///   Returns the current inventory for the adventure with quantities
-    ///   summed across gain/lose/modify events.
-    ///   STUB: this 5.1 implementation returns an empty list. Task 8.1
-    ///   replaces it with the real fold over the inventory_events table.
+    ///   folded across the non-undone inventory_events timeline. 'gain' adds
+    ///   to the running quantity, 'lose' subtracts, and 'modify' sets an
+    ///   absolute value. Items with a final quantity of zero or less are
+    ///   omitted. Result order is first-seen across the event timeline.
+    ///   The Note field carries the note from the most recent event for
+    ///   that item.
     ///   Callers must Free the returned list.
     /// </summary>
     function GetCurrentInventory(AAdventureId: Int64): TList<TInventoryItem>;
@@ -107,8 +115,10 @@ uses
   Data.DB,
   FireDAC.Comp.Client,
   Models.AdventureU, Models.StatDefU, Models.StatChangeU,
+  Models.InventoryEventU,
   Repositories.AdventuresU, Repositories.BooksU,
   Repositories.StatChangesU,
+  Repositories.InventoryEventsU,
   Services.LocalizedTitleU;
 
 constructor TAdventureStateService.Create(const AConnectionName: string);
@@ -218,9 +228,64 @@ end;
 
 function TAdventureStateService.GetCurrentInventory(
   AAdventureId: Int64): TList<TInventoryItem>;
+var
+  LRepo: TInventoryEventsRepo;
+  LEvents: TArray<TInventoryEvent>;
+  LEvent: TInventoryEvent;
+  LOrder: TList<string>;
+  LQuantities: TDictionary<string, Integer>;
+  LNotes: TDictionary<string, string>;
+  LName: string;
+  LQty: Integer;
+  LItem: TInventoryItem;
 begin
-  // STUB: Task 8.1 will fold inventory_events for AAdventureId into items.
   Result := TList<TInventoryItem>.Create;
+  LRepo := TInventoryEventsRepo.Create(FConn);
+  LOrder := TList<string>.Create;
+  LQuantities := TDictionary<string, Integer>.Create;
+  LNotes := TDictionary<string, string>.Create;
+  try
+    // Read events in chronological order with undone steps excluded.
+    LEvents := LRepo.ListByAdventure(AAdventureId, False);
+
+    // Fold per item, remembering insertion order for stable output.
+    for LEvent in LEvents do
+    begin
+      if not LQuantities.ContainsKey(LEvent.ItemName) then
+      begin
+        LOrder.Add(LEvent.ItemName);
+        LQuantities.Add(LEvent.ItemName, 0);
+      end;
+      if SameText(LEvent.Kind, 'gain') then
+        LQuantities[LEvent.ItemName] := LQuantities[LEvent.ItemName] +
+          LEvent.Quantity
+      else if SameText(LEvent.Kind, 'lose') then
+        LQuantities[LEvent.ItemName] := LQuantities[LEvent.ItemName] -
+          LEvent.Quantity
+      else if SameText(LEvent.Kind, 'modify') then
+        LQuantities[LEvent.ItemName] := LEvent.Quantity;
+      // Note from the most recent event for that item wins.
+      LNotes.AddOrSetValue(LEvent.ItemName, LEvent.Note);
+    end;
+
+    // Emit only items with a positive remaining quantity.
+    for LName in LOrder do
+    begin
+      LQty := LQuantities[LName];
+      if LQty <= 0 then
+        Continue;
+      LItem.Name     := LName;
+      LItem.Quantity := LQty;
+      if not LNotes.TryGetValue(LName, LItem.Note) then
+        LItem.Note := '';
+      Result.Add(LItem);
+    end;
+  finally
+    LNotes.Free;
+    LQuantities.Free;
+    LOrder.Free;
+    LRepo.Free;
+  end;
 end;
 
 end.

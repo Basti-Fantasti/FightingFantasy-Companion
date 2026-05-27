@@ -41,6 +41,8 @@ uses
   Repositories.StepsU in '..\repositories\Repositories.StepsU.pas',
   Models.StatChangeU in '..\models\Models.StatChangeU.pas',
   Repositories.StatChangesU in '..\repositories\Repositories.StatChangesU.pas',
+  Models.InventoryEventU in '..\models\Models.InventoryEventU.pas',
+  Repositories.InventoryEventsU in '..\repositories\Repositories.InventoryEventsU.pas',
   Services.AdventureStateU in '..\services\Services.AdventureStateU.pas',
   Tests.L10nU in 'Tests.L10nU.pas',
   Tests.MigrationU in 'Tests.MigrationU.pas',
@@ -50,7 +52,8 @@ uses
   Tests.Services.BookCatalogU in 'Tests.Services.BookCatalogU.pas',
   Tests.Repositories.AdventuresU in 'Tests.Repositories.AdventuresU.pas',
   Tests.Repositories.StepsU in 'Tests.Repositories.StepsU.pas',
-  Tests.Services.AdventureStateU in 'Tests.Services.AdventureStateU.pas';
+  Tests.Services.AdventureStateU in 'Tests.Services.AdventureStateU.pas',
+  Tests.Services.AdventureStateU.Inventory in 'Tests.Services.AdventureStateU.Inventory.pas';
 
 var
   LRunner: ITestRunner;
