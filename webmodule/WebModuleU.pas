@@ -59,16 +59,27 @@ uses
   MVCFramework.Middleware.Session,
   AppConfigU,
   Repositories.MigrationU,
+  Services.BookCatalogU,
   Controllers.AuthU;
 
 procedure TFFWebModule.WebModuleCreate(Sender: TObject);
 var
   LConnName: string;
+  LCatalog: TBookCatalogService;
 begin
   // Ensure the SQLite database exists and is migrated before any controller
   // can touch it. Runs once per WebModule (one per worker on Indy).
   LConnName := TMigrationRunner.CreateFileConnection(TAppConfig.DatabasePath);
   TMigrationRunner.RunOnConnection(LConnName);
+
+  // Load (or refresh) the seed book catalogue. Idempotent: re-running on
+  // every boot keeps the database in sync with data/books_seed.yaml.
+  LCatalog := TBookCatalogService.Create(LConnName);
+  try
+    LCatalog.LoadSeed(TAppConfig.SeedYamlPath);
+  finally
+    LCatalog.Free;
+  end;
 
   FMVC := TMVCEngine.Create(Self,
     procedure(Config: TMVCConfig)
