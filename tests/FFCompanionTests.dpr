@@ -24,8 +24,14 @@ uses
   MVCFramework.SQLGenerators.Sqlite,
   Repositories.MigrationU in '..\repositories\Repositories.MigrationU.pas',
   TestHelpers.DbU in 'TestHelpers.DbU.pas',
+  Models.UserU in '..\models\Models.UserU.pas',
+  Models.SessionU in '..\models\Models.SessionU.pas',
+  Repositories.UsersU in '..\repositories\Repositories.UsersU.pas',
+  Repositories.SessionsU in '..\repositories\Repositories.SessionsU.pas',
+  Services.AuthU in '..\services\Services.AuthU.pas',
   Tests.L10nU in 'Tests.L10nU.pas',
-  Tests.MigrationU in 'Tests.MigrationU.pas';
+  Tests.MigrationU in 'Tests.MigrationU.pas',
+  Tests.Services.AuthU in 'Tests.Services.AuthU.pas';
 
 var
   LRunner: ITestRunner;

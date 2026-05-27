@@ -55,7 +55,7 @@
         <DCC_F>false</DCC_F>
         <DCC_K>false</DCC_K>
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;$(DCC_Namespace)</DCC_Namespace>
-        <DCC_UnitSearchPath>controllers;models;services;repositories;webmodule;config;X:\Delphi_libs\D12\dmvcframework\sources;X:\Delphi_libs\D12\dmvcframework\lib\loggerpro;X:\Delphi_libs\D12\dmvcframework\lib\dmustache;X:\Delphi_libs\D12\dmvcframework\lib\swagdoc\Source;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+        <DCC_UnitSearchPath>controllers;models;services;repositories;webmodule;config;X:\Delphi_libs\D12\dmvcframework\sources;X:\Delphi_libs\D12\dmvcframework\lib\loggerpro;X:\Delphi_libs\D12\dmvcframework\lib\dmustache;X:\Delphi_libs\D12\dmvcframework\lib\swagdoc\Source;X:\Delphi_libs\D12\bcrypt\src;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <DCC_OutputDRCFile>true</DCC_OutputDRCFile>
         <SanitizedProjectName>FFCompanion</SanitizedProjectName>
         <VerInfo_Locale>1031</VerInfo_Locale>
@@ -98,6 +98,11 @@
         <DCCReference Include="config\AppConfigU.pas"/>
         <DCCReference Include="controllers\Controllers.BaseU.pas"/>
         <DCCReference Include="repositories\Repositories.MigrationU.pas"/>
+        <DCCReference Include="models\Models.UserU.pas"/>
+        <DCCReference Include="models\Models.SessionU.pas"/>
+        <DCCReference Include="repositories\Repositories.UsersU.pas"/>
+        <DCCReference Include="repositories\Repositories.SessionsU.pas"/>
+        <DCCReference Include="services\Services.AuthU.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
