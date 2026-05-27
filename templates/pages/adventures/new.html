@@ -1,0 +1,33 @@
+{{extends "../../layouts/base.html"}}
+{{block "title"}}{{:l10n.adv_new_title}} - {{:l10n.app_name}}{{endblock}}
+{{block "content"}}
+<h1 class="title">{{:l10n.adv_new_title}}</h1>
+<form method="post" action="/adventures">
+  <div class="field">
+    <label class="label">{{:l10n.adv_select_book}}</label>
+    <div class="control">
+      <div class="select">
+        <select name="book_id" required>
+          {{for book in books}}
+            <option value="{{:book.id}}">{{:book.title}}</option>
+          {{endfor}}
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="field">
+    <label class="label">{{:l10n.adv_title_label}}</label>
+    <div class="control">
+      <input class="input" name="title" required>
+    </div>
+  </div>
+
+  {{if error}}<div class="notification is-danger">{{:error}}</div>{{endif}}
+
+  <div class="field">
+    <button class="button is-primary">{{:l10n.btn_create}}</button>
+    <a class="button" href="/">{{:l10n.btn_cancel}}</a>
+  </div>
+</form>
+{{endblock}}

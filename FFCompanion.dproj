@@ -114,6 +114,7 @@
         <DCCReference Include="services\Services.AdventureStateU.pas"/>
         <DCCReference Include="controllers\Controllers.AuthU.pas"/>
         <DCCReference Include="controllers\Controllers.BooksU.pas"/>
+        <DCCReference Include="controllers\Controllers.AdventuresU.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
