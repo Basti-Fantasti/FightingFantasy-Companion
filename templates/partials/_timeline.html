@@ -1,3 +1,24 @@
 <div id="timeline-area">
-  <!-- filled in Task 6.2 -->
+  {{for step in steps}}
+    <div class="box {{if step.undone}}is-undone{{endif}}">
+      <span class="tag">#{{:step.seq}}</span>
+      {{if step.from_section}}&sect;{{:step.from_section}} &rarr; {{endif}}&sect;{{:step.to_section}}
+      {{if step.note}} &mdash; {{:step.note}}{{endif}}
+      {{if step.flag_fight}}<span class="tag is-danger">{{:l10n.step_flag_fight}}</span>{{endif}}
+      {{if step.flag_item}}<span class="tag is-info">{{:l10n.step_flag_item}}</span>{{endif}}
+      {{if step.flag_stat}}<span class="tag is-warning">{{:l10n.step_flag_stat}}</span>{{endif}}
+      <span class="is-pulled-right">{{:step.created_at_display}}</span>
+      <div class="mt-2">
+        {{if step.undone}}
+          <form hx-post="/adventures/{{:adventure.id}}/steps/{{:step.id}}/redo" hx-target="#timeline-area" hx-swap="outerHTML">
+            <button class="button is-small">{{:l10n.btn_redo}}</button>
+          </form>
+        {{else}}
+          <form hx-post="/adventures/{{:adventure.id}}/steps/{{:step.id}}/undo" hx-target="#timeline-area" hx-swap="outerHTML">
+            <button class="button is-small">{{:l10n.btn_undo}}</button>
+          </form>
+        {{endif}}
+      </div>
+    </div>
+  {{endfor}}
 </div>

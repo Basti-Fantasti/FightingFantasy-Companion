@@ -15,3 +15,9 @@ document.body.addEventListener('close-modal', () => {
 document.body.addEventListener('graph-changed', () => {
   if (window.ffRefreshGraph) window.ffRefreshGraph();
 });
+
+document.body.addEventListener('step-logged', () => {
+  if (window.ffAdventureId) {
+    htmx.ajax('GET', '/adventures/' + window.ffAdventureId + '/timeline', '#timeline-area');
+  }
+});

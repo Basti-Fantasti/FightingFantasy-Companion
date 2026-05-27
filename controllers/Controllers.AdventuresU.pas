@@ -95,6 +95,17 @@ type
     [MVCConsumes(TMVCMediaType.APPLICATION_FORM_URLENCODED)]
     procedure PostStatus(Id: Int64;
       [MVCFromContentField('status', '')] ANewStatus: string);
+
+    /// <summary>
+    ///   Returns the timeline partial fragment for the adventure. Used by the
+    ///   HTMX step-logged listener in app.js to refresh #timeline-area after
+    ///   a new step is logged. The fragment includes undone steps so the UI
+    ///   can apply is-undone styling; ownership is verified before rendering.
+    /// </summary>
+    [MVCPath('/adventures/($Id)/timeline')]
+    [MVCHTTPMethod([httpGET])]
+    [MVCProduces(TMVCMediaType.TEXT_HTML)]
+    procedure Timeline(Id: Int64);
   end;
 
 implementation
@@ -103,10 +114,11 @@ uses
   System.SysUtils, System.DateUtils, System.Generics.Collections,
   JsonDataObjects,
   AppConfigU,
-  Models.AdventureU, Models.BookU,
-  Repositories.AdventuresU, Repositories.BooksU,
+  Models.AdventureU, Models.BookU, Models.StepU,
+  Repositories.AdventuresU, Repositories.BooksU, Repositories.StepsU,
   Services.AdventureStateU,
-  Services.LocalizedTitleU;
+  Services.LocalizedTitleU,
+  Controllers.StepsU;
 
 const
   CMainConnection = 'FFMain';
@@ -306,11 +318,14 @@ procedure TAdventuresController.Play(Id: Int64);
 var
   LAdvRepo: TAdventuresRepo;
   LBookRepo: TBooksRepo;
+  LStepsRepo: TStepsRepo;
   LStateSvc: TAdventureStateService;
   LAdv: TAdventure;
   LAdvObj: TJsonObject;
   LStats: TJsonArray;
   LInventory: TJsonArray;
+  LStepsArr: TJsonArray;
+  LStepList: TArray<TStep>;
   LBookTitle: string;
   LCurrentLang, LDefaultLang: string;
   LCurrentSection: Integer;
@@ -357,20 +372,32 @@ begin
     LStateSvc.Free;
   end;
 
+  // Timeline: pull the full step list (including undone rows so the partial
+  // can apply is-undone styling). Newest-first as returned by the repo.
+  LStepsRepo := TStepsRepo.Create(CMainConnection);
+  try
+    LStepList := LStepsRepo.ListByAdventure(LAdv.Id, True);
+  finally
+    LStepsRepo.Free;
+  end;
+
   LAdvObj := TJsonObject.Create;
-  LAdvObj.L['id']     := LAdv.Id;
-  LAdvObj.S['title']  := LAdv.Title;
-  LAdvObj.S['status'] := LAdv.Status;
-  LAdvObj.L['book_id'] := LAdv.BookId;
+  LAdvObj.L['id']           := LAdv.Id;
+  LAdvObj.S['title']        := LAdv.Title;
+  LAdvObj.S['status']       := LAdv.Status;
+  LAdvObj.L['book_id']      := LAdv.BookId;
+  LAdvObj.L['last_step_id'] := LAdv.LastStepId;
 
   LStats := TJsonArray.Create;
   LInventory := TJsonArray.Create;
+  LStepsArr := BuildStepsArray(LStepList);
 
   ViewData['adventure']       := LAdvObj;
   ViewData['book_title']      := LBookTitle;
   ViewData['current_section'] := IntToStr(LCurrentSection);
   ViewData['stats']           := LStats;
   ViewData['inventory']       := LInventory;
+  ViewData['steps']           := LStepsArr;
 
   Render(RenderView('pages/adventures/play'));
 end;
@@ -410,6 +437,56 @@ begin
 
   Flash('success', L10n('flash_saved'));
   Redirect('/');
+end;
+
+procedure TAdventuresController.Timeline(Id: Int64);
+var
+  LAdvRepo: TAdventuresRepo;
+  LStepsRepo: TStepsRepo;
+  LAdv: TAdventure;
+  LAdvObj: TJsonObject;
+  LStepList: TArray<TStep>;
+begin
+  RequireLogin;
+
+  LAdvRepo := TAdventuresRepo.Create(CMainConnection);
+  try
+    if not LAdvRepo.TryGetById(Id, LAdv) then
+    begin
+      Context.Response.StatusCode := HTTP_STATUS.NotFound;
+      Render(SAdventureGone);
+      Exit;
+    end;
+    if LAdv.UserId <> CurrentUserId then
+    begin
+      Context.Response.StatusCode := HTTP_STATUS.NotFound;
+      Render(SAdventureGone);
+      Exit;
+    end;
+  finally
+    LAdvRepo.Free;
+  end;
+
+  LStepsRepo := TStepsRepo.Create(CMainConnection);
+  try
+    LStepList := LStepsRepo.ListByAdventure(Id, True);
+  finally
+    LStepsRepo.Free;
+  end;
+
+  LAdvObj := TJsonObject.Create;
+  LAdvObj.L['id']           := LAdv.Id;
+  LAdvObj.S['title']        := LAdv.Title;
+  LAdvObj.S['status']       := LAdv.Status;
+  LAdvObj.L['book_id']      := LAdv.BookId;
+  LAdvObj.L['last_step_id'] := LAdv.LastStepId;
+
+  ViewData['adventure'] := LAdvObj;
+  ViewData['steps']     := BuildStepsArray(LStepList);
+
+  // Fragment-only response — the partial doesn't extend a layout, so we
+  // skip the base wrapper entirely.
+  Render(RenderView('partials/_timeline'));
 end;
 
 end.

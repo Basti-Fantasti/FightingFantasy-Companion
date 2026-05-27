@@ -62,7 +62,8 @@ uses
   Services.BookCatalogU,
   Controllers.AuthU,
   Controllers.BooksU,
-  Controllers.AdventuresU;
+  Controllers.AdventuresU,
+  Controllers.StepsU;
 
 procedure TFFWebModule.WebModuleCreate(Sender: TObject);
 var
@@ -98,7 +99,7 @@ begin
   FMVC.AddController(TAuthController);
   FMVC.AddController(TBooksController);
   FMVC.AddController(TAdventuresController);
-  // Further controllers (steps, ...) are added in later phases.
+  FMVC.AddController(TStepsController);
 end;
 
 procedure TFFWebModule.WebModuleDestroy(Sender: TObject);

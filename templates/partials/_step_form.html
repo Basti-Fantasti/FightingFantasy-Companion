@@ -1,3 +1,24 @@
-<form id="step-form">
-  <!-- filled in Task 6.2 -->
+<form id="step-form" hx-post="/adventures/{{:adventure.id}}/steps"
+      hx-target="this" hx-swap="outerHTML">
+  <input type="hidden" name="last_step_id" value="{{:adventure.last_step_id}}">
+  <div class="field is-grouped">
+    <div class="control">
+      <label class="label">{{:l10n.step_form_from}}</label>
+      <input class="input" name="from_section" value="{{:current_section}}" readonly>
+    </div>
+    <div class="control">
+      <label class="label">{{:l10n.step_form_to}}</label>
+      <input class="input" name="to_section" type="number" min="1" required autofocus>
+    </div>
+  </div>
+  <div class="field">
+    <label class="label">{{:l10n.step_form_note}}</label>
+    <input class="input" name="note">
+  </div>
+  <div class="field">
+    <label class="checkbox"><input type="checkbox" name="flag_fight" value="1"> {{:l10n.step_flag_fight}}</label>
+    <label class="checkbox"><input type="checkbox" name="flag_item" value="1"> {{:l10n.step_flag_item}}</label>
+    <label class="checkbox"><input type="checkbox" name="flag_stat" value="1"> {{:l10n.step_flag_stat}}</label>
+  </div>
+  <button class="button is-primary">{{:l10n.step_btn_log}}</button>
 </form>
