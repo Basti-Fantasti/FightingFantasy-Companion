@@ -79,6 +79,14 @@ type
     procedure SetFlagStat(AStepId: Int64; AValue: Boolean);
 
     /// <summary>
+    ///   Sets the flag_item marker on a single step row. Called by the
+    ///   inventory controller when an inventory mutation is committed against
+    ///   a previously unflagged step so the timeline icon reflects that the
+    ///   step now carries an item change.
+    /// </summary>
+    procedure SetFlagItem(AStepId: Int64; AValue: Boolean);
+
+    /// <summary>
     ///   Loads a step by id.
     /// </summary>
     /// <exception cref="EStepNotFound">When no row matches.</exception>
@@ -251,6 +259,21 @@ begin
   LC := NewConn(FConn);
   try
     LC.ExecSQL('UPDATE steps SET flag_stat=:v WHERE id=:i',
+      [LValue, AStepId]);
+  finally
+    LC.Free;
+  end;
+end;
+
+procedure TStepsRepo.SetFlagItem(AStepId: Int64; AValue: Boolean);
+var
+  LC: TFDConnection;
+  LValue: Integer;
+begin
+  if AValue then LValue := 1 else LValue := 0;
+  LC := NewConn(FConn);
+  try
+    LC.ExecSQL('UPDATE steps SET flag_item=:v WHERE id=:i',
       [LValue, AStepId]);
   finally
     LC.Free;

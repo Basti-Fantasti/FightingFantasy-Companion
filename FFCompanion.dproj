@@ -123,6 +123,7 @@
         <DCCReference Include="controllers\Controllers.AdventuresU.pas"/>
         <DCCReference Include="controllers\Controllers.StepsU.pas"/>
         <DCCReference Include="controllers\Controllers.StatsU.pas"/>
+        <DCCReference Include="controllers\Controllers.InventoryU.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

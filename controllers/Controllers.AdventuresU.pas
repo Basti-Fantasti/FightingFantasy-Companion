@@ -111,7 +111,8 @@ type
 implementation
 
 uses
-  System.SysUtils, System.DateUtils, System.Generics.Collections,
+  System.SysUtils, System.DateUtils, System.NetEncoding,
+  System.Generics.Collections,
   JsonDataObjects,
   AppConfigU,
   Models.AdventureU, Models.BookU, Models.StepU,
@@ -327,6 +328,9 @@ var
   LStatList: TList<TStatSnapshot>;
   LStat: TStatSnapshot;
   LInventory: TJsonArray;
+  LInvList: TList<TInventoryItem>;
+  LInvItem: TInventoryItem;
+  LInvObj: TJsonObject;
   LStepsArr: TJsonArray;
   LStepList: TArray<TStep>;
   LBookTitle: string;
@@ -386,7 +390,23 @@ begin
     finally
       LStatList.Free;
     end;
-    // Inventory folder remains a stub in Task 7.1; Task 8.x will populate it.
+
+    // Inventory: fold non-undone events into current quantities. The
+    // name_url field is pre-encoded server-side so the panel template can
+    // embed it directly in the modal-open hx-get URL.
+    LInventory := TJsonArray.Create;
+    LInvList := LStateSvc.GetCurrentInventory(LAdv.Id);
+    try
+      for LInvItem in LInvList do
+      begin
+        LInvObj := LInventory.AddObject;
+        LInvObj.S['name']     := LInvItem.Name;
+        LInvObj.S['name_url'] := TNetEncoding.URL.Encode(LInvItem.Name);
+        LInvObj.I['quantity'] := LInvItem.Quantity;
+      end;
+    finally
+      LInvList.Free;
+    end;
   finally
     LStateSvc.Free;
   end;
@@ -407,7 +427,6 @@ begin
   LAdvObj.L['book_id']      := LAdv.BookId;
   LAdvObj.L['last_step_id'] := LAdv.LastStepId;
 
-  LInventory := TJsonArray.Create;
   LStepsArr := BuildStepsArray(LStepList);
 
   ViewData['adventure']       := LAdvObj;
