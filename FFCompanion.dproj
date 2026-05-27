@@ -108,6 +108,7 @@
         <DCCReference Include="repositories\Repositories.BooksU.pas"/>
         <DCCReference Include="services\Services.LocalizedTitleU.pas"/>
         <DCCReference Include="services\Services.YamlReaderU.pas"/>
+        <DCCReference Include="services\Services.BookCatalogU.pas"/>
         <DCCReference Include="controllers\Controllers.AuthU.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>

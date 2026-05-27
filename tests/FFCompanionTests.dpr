@@ -34,11 +34,13 @@ uses
   Repositories.BooksU in '..\repositories\Repositories.BooksU.pas',
   Services.LocalizedTitleU in '..\services\Services.LocalizedTitleU.pas',
   Services.YamlReaderU in '..\services\Services.YamlReaderU.pas',
+  Services.BookCatalogU in '..\services\Services.BookCatalogU.pas',
   Tests.L10nU in 'Tests.L10nU.pas',
   Tests.MigrationU in 'Tests.MigrationU.pas',
   Tests.Services.AuthU in 'Tests.Services.AuthU.pas',
   Tests.Services.LocalizedTitleU in 'Tests.Services.LocalizedTitleU.pas',
-  Tests.Services.YamlReaderU in 'Tests.Services.YamlReaderU.pas';
+  Tests.Services.YamlReaderU in 'Tests.Services.YamlReaderU.pas',
+  Tests.Services.BookCatalogU in 'Tests.Services.BookCatalogU.pas';
 
 var
   LRunner: ITestRunner;

@@ -1,0 +1,28 @@
+- slug: citadel-of-chaos
+  author: Steve Jackson
+  titles:
+    en: The Citadel of Chaos
+    de: Die Zitadelle des Zauberers
+  stats:
+    - { name: skill,   kind: integer, default: 0, titles: { en: Skill,   de: Geschicklichkeit } }
+    - { name: stamina, kind: integer, default: 0, titles: { en: Stamina, de: Ausdauer } }
+    - { name: luck,    kind: integer, default: 0, titles: { en: Luck,    de: Glück } }
+    - { name: magic,   kind: integer, default: 0, titles: { en: Magic,   de: Magie } }
+
+- slug: warlock-of-firetop-mountain
+  author: Steve Jackson & Ian Livingstone
+  titles:
+    en: The Warlock of Firetop Mountain
+  stats:
+    - { name: skill,   kind: integer, default: 0, titles: { en: Skill,   de: Geschicklichkeit } }
+    - { name: stamina, kind: integer, default: 0, titles: { en: Stamina, de: Ausdauer } }
+    - { name: luck,    kind: integer, default: 0, titles: { en: Luck,    de: Glück } }
+
+- slug: deathtrap-dungeon
+  author: Ian Livingstone
+  titles:
+    en: Deathtrap Dungeon
+  stats:
+    - { name: skill,   kind: integer, default: 0, titles: { en: Skill,   de: Geschicklichkeit } }
+    - { name: stamina, kind: integer, default: 0, titles: { en: Stamina, de: Ausdauer } }
+    - { name: luck,    kind: integer, default: 0, titles: { en: Luck,    de: Glück } }
