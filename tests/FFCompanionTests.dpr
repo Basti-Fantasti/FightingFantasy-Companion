@@ -37,6 +37,8 @@ uses
   Services.BookCatalogU in '..\services\Services.BookCatalogU.pas',
   Models.AdventureU in '..\models\Models.AdventureU.pas',
   Repositories.AdventuresU in '..\repositories\Repositories.AdventuresU.pas',
+  Models.StepU in '..\models\Models.StepU.pas',
+  Repositories.StepsU in '..\repositories\Repositories.StepsU.pas',
   Services.AdventureStateU in '..\services\Services.AdventureStateU.pas',
   Tests.L10nU in 'Tests.L10nU.pas',
   Tests.MigrationU in 'Tests.MigrationU.pas',
@@ -44,7 +46,8 @@ uses
   Tests.Services.LocalizedTitleU in 'Tests.Services.LocalizedTitleU.pas',
   Tests.Services.YamlReaderU in 'Tests.Services.YamlReaderU.pas',
   Tests.Services.BookCatalogU in 'Tests.Services.BookCatalogU.pas',
-  Tests.Repositories.AdventuresU in 'Tests.Repositories.AdventuresU.pas';
+  Tests.Repositories.AdventuresU in 'Tests.Repositories.AdventuresU.pas',
+  Tests.Repositories.StepsU in 'Tests.Repositories.StepsU.pas';
 
 var
   LRunner: ITestRunner;
