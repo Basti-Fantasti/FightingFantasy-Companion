@@ -29,9 +29,14 @@ uses
   Repositories.UsersU in '..\repositories\Repositories.UsersU.pas',
   Repositories.SessionsU in '..\repositories\Repositories.SessionsU.pas',
   Services.AuthU in '..\services\Services.AuthU.pas',
+  Models.BookU in '..\models\Models.BookU.pas',
+  Models.StatDefU in '..\models\Models.StatDefU.pas',
+  Repositories.BooksU in '..\repositories\Repositories.BooksU.pas',
+  Services.LocalizedTitleU in '..\services\Services.LocalizedTitleU.pas',
   Tests.L10nU in 'Tests.L10nU.pas',
   Tests.MigrationU in 'Tests.MigrationU.pas',
-  Tests.Services.AuthU in 'Tests.Services.AuthU.pas';
+  Tests.Services.AuthU in 'Tests.Services.AuthU.pas',
+  Tests.Services.LocalizedTitleU in 'Tests.Services.LocalizedTitleU.pas';
 
 var
   LRunner: ITestRunner;

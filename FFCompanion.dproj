@@ -103,6 +103,10 @@
         <DCCReference Include="repositories\Repositories.UsersU.pas"/>
         <DCCReference Include="repositories\Repositories.SessionsU.pas"/>
         <DCCReference Include="services\Services.AuthU.pas"/>
+        <DCCReference Include="models\Models.BookU.pas"/>
+        <DCCReference Include="models\Models.StatDefU.pas"/>
+        <DCCReference Include="repositories\Repositories.BooksU.pas"/>
+        <DCCReference Include="services\Services.LocalizedTitleU.pas"/>
         <DCCReference Include="controllers\Controllers.AuthU.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
