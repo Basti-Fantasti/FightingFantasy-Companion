@@ -1,4 +1,9 @@
 <div id="stats-panel" class="box">
   <h3 class="subtitle is-5">{{:l10n.stat_panel_title}}</h3>
-  <!-- filled in Task 7.2 -->
+  {{for stat in stats}}
+  <div class="level">
+    <div class="level-left"><strong>{{:stat.display_name}}</strong></div>
+    <div class="level-right">{{:stat.value}}</div>
+  </div>
+  {{endfor}}
 </div>

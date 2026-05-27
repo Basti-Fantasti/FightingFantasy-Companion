@@ -113,6 +113,8 @@
         <DCCReference Include="repositories\Repositories.AdventuresU.pas"/>
         <DCCReference Include="models\Models.StepU.pas"/>
         <DCCReference Include="repositories\Repositories.StepsU.pas"/>
+        <DCCReference Include="models\Models.StatChangeU.pas"/>
+        <DCCReference Include="repositories\Repositories.StatChangesU.pas"/>
         <DCCReference Include="services\Services.AdventureStateU.pas"/>
         <DCCReference Include="controllers\Controllers.AuthU.pas"/>
         <DCCReference Include="controllers\Controllers.BooksU.pas"/>

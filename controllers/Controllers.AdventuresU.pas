@@ -323,6 +323,9 @@ var
   LAdv: TAdventure;
   LAdvObj: TJsonObject;
   LStats: TJsonArray;
+  LStatObj: TJsonObject;
+  LStatList: TList<TStatSnapshot>;
+  LStat: TStatSnapshot;
   LInventory: TJsonArray;
   LStepsArr: TJsonArray;
   LStepList: TArray<TStep>;
@@ -362,12 +365,24 @@ begin
     LBookRepo.Free;
   end;
 
+  LStats := TJsonArray.Create;
   LStateSvc := TAdventureStateService.Create(CMainConnection);
   try
     LCurrentSection := LStateSvc.GetCurrentSection(LAdv.Id);
-    // Stats / inventory folders are stubs in Task 5.1; Tasks 7.2 / 8.2 will
-    // populate the panels via separate HTMX endpoints. We just hand the
-    // template empty arrays for now so the partials can render skeletons.
+    LStatList := LStateSvc.GetStatsHistory(LAdv.Id, LCurrentLang, LDefaultLang);
+    try
+      for LStat in LStatList do
+      begin
+        LStatObj := LStats.AddObject;
+        LStatObj.L['stat_def_id']  := LStat.StatDefId;
+        LStatObj.S['display_name'] := LStat.DisplayName;
+        LStatObj.S['kind']         := LStat.Kind;
+        LStatObj.S['value']        := LStat.Value;
+      end;
+    finally
+      LStatList.Free;
+    end;
+    // Inventory folder remains a stub in Task 7.1; Task 8.x will populate it.
   finally
     LStateSvc.Free;
   end;
@@ -388,7 +403,6 @@ begin
   LAdvObj.L['book_id']      := LAdv.BookId;
   LAdvObj.L['last_step_id'] := LAdv.LastStepId;
 
-  LStats := TJsonArray.Create;
   LInventory := TJsonArray.Create;
   LStepsArr := BuildStepsArray(LStepList);
 

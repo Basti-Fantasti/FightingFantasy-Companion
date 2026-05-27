@@ -12,13 +12,20 @@
     stat_changes, inventory_events) into the live state a player needs:
     the current section, the current stat values, and the current inventory.
 
-    This task (5.1) only implements GetCurrentSection. The stat-history and
-    inventory folders are stubs that return empty lists; Tasks 7.1 and 8.1
-    will replace those implementations once the event-recording flows land.
+    GetCurrentSection resolves adventures.last_step_id to steps.to_section.
+    GetStatsHistory folds stat_changes for the adventure into one TStatSnapshot
+    per stat_def: seeded from stat_defs.default_value, then overwritten in
+    chronological order by every non-undone stat change. Display names are
+    resolved through TLocalizedTitleService using the supplied language tags.
+    GetCurrentInventory remains a stub until Task 8.1.
+
     Callers must Free the returned lists.
 
   Dependencies:
     - System.Generics.Collections
+    - Models.StatDefU, Models.StatChangeU
+    - Repositories.AdventuresU, Repositories.BooksU, Repositories.StatChangesU
+    - Services.LocalizedTitleU
     - FireDAC.Comp.Client
 *******************************************************************************}
 
@@ -75,11 +82,13 @@ type
 
     /// <summary>
     ///   Returns the current value of every tracked stat for the adventure.
-    ///   STUB: this 5.1 implementation returns an empty list. Task 7.1
-    ///   replaces it with the real fold over the stat_changes table.
+    ///   Seeds each stat from its default value, then replays every
+    ///   non-undone stat change in step-sequence order, picking the localised
+    ///   display name via the four-step fallback chain.
     ///   Callers must Free the returned list.
     /// </summary>
-    function GetStatsHistory(AAdventureId: Int64): TList<TStatSnapshot>;
+    function GetStatsHistory(AAdventureId: Int64;
+      const ACurrentLang, ADefaultLang: string): TList<TStatSnapshot>;
 
     /// <summary>
     ///   Returns the current inventory for the adventure with quantities
@@ -94,8 +103,13 @@ type
 implementation
 
 uses
+  System.SysUtils,
   Data.DB,
-  FireDAC.Comp.Client;
+  FireDAC.Comp.Client,
+  Models.AdventureU, Models.StatDefU, Models.StatChangeU,
+  Repositories.AdventuresU, Repositories.BooksU,
+  Repositories.StatChangesU,
+  Services.LocalizedTitleU;
 
 constructor TAdventureStateService.Create(const AConnectionName: string);
 begin
@@ -135,11 +149,71 @@ begin
   end;
 end;
 
-function TAdventureStateService.GetStatsHistory(
-  AAdventureId: Int64): TList<TStatSnapshot>;
+function TAdventureStateService.GetStatsHistory(AAdventureId: Int64;
+  const ACurrentLang, ADefaultLang: string): TList<TStatSnapshot>;
+var
+  LAdvRepo: TAdventuresRepo;
+  LBooksRepo: TBooksRepo;
+  LChangesRepo: TStatChangesRepo;
+  LAdv: TAdventure;
+  LDefs: TArray<TStatDef>;
+  LDef: TStatDef;
+  LTitles: TArray<TStatDefTitle>;
+  LTitle: TStatDefTitle;
+  LTitleDict: TDictionary<string, string>;
+  LChanges: TArray<TStatChange>;
+  LChange: TStatChange;
+  LSnapshot: TStatSnapshot;
+  LValues: TDictionary<Int64, string>;
 begin
-  // STUB: Task 7.1 will fold stat_changes for AAdventureId into snapshots.
   Result := TList<TStatSnapshot>.Create;
+  LAdvRepo := TAdventuresRepo.Create(FConn);
+  try
+    if not LAdvRepo.TryGetById(AAdventureId, LAdv) then
+      Exit;
+  finally
+    LAdvRepo.Free;
+  end;
+
+  LBooksRepo := TBooksRepo.Create(FConn);
+  LChangesRepo := TStatChangesRepo.Create(FConn);
+  LValues := TDictionary<Int64, string>.Create;
+  try
+    LDefs := LBooksRepo.GetStatDefs(LAdv.BookId);
+    // Seed every stat with its default value.
+    for LDef in LDefs do
+      LValues.AddOrSetValue(LDef.Id, LDef.DefaultValue);
+
+    // Replay every non-undone change in chronological (seq, id) order so the
+    // last write wins per stat_def_id.
+    LChanges := LChangesRepo.ListByAdventure(AAdventureId, False);
+    for LChange in LChanges do
+      if LValues.ContainsKey(LChange.StatDefId) then
+        LValues[LChange.StatDefId] := LChange.NewValue;
+
+    // Build snapshots in stat-def order with localised display names.
+    for LDef in LDefs do
+    begin
+      LTitleDict := TDictionary<string, string>.Create;
+      try
+        LTitles := LBooksRepo.GetStatDefTitles(LDef.Id);
+        for LTitle in LTitles do
+          LTitleDict.AddOrSetValue(LTitle.Lang, LTitle.DisplayName);
+        LSnapshot.StatDefId   := LDef.Id;
+        LSnapshot.DisplayName := TLocalizedTitleService.Pick(LTitleDict,
+          ACurrentLang, ADefaultLang, LDef.Name);
+      finally
+        LTitleDict.Free;
+      end;
+      LSnapshot.Kind  := LDef.Kind;
+      LSnapshot.Value := LValues[LDef.Id];
+      Result.Add(LSnapshot);
+    end;
+  finally
+    LValues.Free;
+    LChangesRepo.Free;
+    LBooksRepo.Free;
+  end;
 end;
 
 function TAdventureStateService.GetCurrentInventory(
