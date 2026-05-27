@@ -13,7 +13,8 @@ uses
   MVCFramework.SQLGenerators.Sqlite,
   IdHTTPWebBrokerBridge,
   WebModuleU in 'webmodule\WebModuleU.pas' {FFWebModule: TWebModule},
-  AppConfigU in 'config\AppConfigU.pas';
+  AppConfigU in 'config\AppConfigU.pas',
+  Controllers.BaseU in 'controllers\Controllers.BaseU.pas';
 
 procedure RunServer(APort: Integer);
 var
