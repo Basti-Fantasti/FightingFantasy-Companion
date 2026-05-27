@@ -116,7 +116,9 @@ uses
   JsonDataObjects,
   AppConfigU,
   Models.AdventureU, Models.BookU, Models.StepU,
+  Models.DiceRollU,
   Repositories.AdventuresU, Repositories.BooksU, Repositories.StepsU,
+  Repositories.DiceRollsU,
   Services.AdventureStateU,
   Services.LocalizedTitleU,
   Controllers.StepsU;
@@ -333,6 +335,12 @@ var
   LInvObj: TJsonObject;
   LStepsArr: TJsonArray;
   LStepList: TArray<TStep>;
+  LDiceRepo: TDiceRollsRepo;
+  LRecentRolls: TArray<TDiceRoll>;
+  LRoll: TDiceRoll;
+  LLastRoll: TJsonObject;
+  LRecentArr: TJsonArray;
+  LRollObj: TJsonObject;
   LBookTitle: string;
   LCurrentLang, LDefaultLang: string;
   LCurrentSection: Integer;
@@ -428,6 +436,35 @@ begin
   LAdvObj.L['last_step_id'] := LAdv.LastStepId;
 
   LStepsArr := BuildStepsArray(LStepList);
+
+  // Dice history: surface the most recent roll for the "Last: ..." highlight
+  // and up to 3 entries for the short history list. When the player hasn't
+  // rolled anything yet both ViewData keys stay unset so the panel's
+  // {{if last_roll}} / {{if recent_rolls}} blocks render nothing.
+  LDiceRepo := TDiceRollsRepo.Create(CMainConnection);
+  try
+    LRecentRolls := LDiceRepo.LastN(LAdv.Id, 3);
+  finally
+    LDiceRepo.Free;
+  end;
+
+  if Length(LRecentRolls) > 0 then
+  begin
+    LRoll := LRecentRolls[0];
+    LLastRoll := TJsonObject.Create;
+    LLastRoll.S['expression'] := LRoll.Expression;
+    LLastRoll.I['result']     := LRoll.Rolled;
+    ViewData['last_roll'] := LLastRoll;
+
+    LRecentArr := TJsonArray.Create;
+    for LRoll in LRecentRolls do
+    begin
+      LRollObj := LRecentArr.AddObject;
+      LRollObj.S['expression'] := LRoll.Expression;
+      LRollObj.I['result']     := LRoll.Rolled;
+    end;
+    ViewData['recent_rolls'] := LRecentArr;
+  end;
 
   ViewData['adventure']       := LAdvObj;
   ViewData['book_title']      := LBookTitle;

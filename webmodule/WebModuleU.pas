@@ -65,13 +65,20 @@ uses
   Controllers.AdventuresU,
   Controllers.StepsU,
   Controllers.StatsU,
-  Controllers.InventoryU;
+  Controllers.InventoryU,
+  Controllers.DiceU;
 
 procedure TFFWebModule.WebModuleCreate(Sender: TObject);
 var
   LConnName: string;
   LCatalog: TBookCatalogService;
 begin
+  // Seed the global RNG once per WebModule so the dice roller (and any other
+  // future random consumer) does not return the same sequence on every boot.
+  // Cheap and idempotent: re-running on Indy worker spawn is harmless.
+  if RandSeed = 0 then
+    Randomize;
+
   // Ensure the SQLite database exists and is migrated before any controller
   // can touch it. Runs once per WebModule (one per worker on Indy).
   LConnName := TMigrationRunner.CreateFileConnection(TAppConfig.DatabasePath);
@@ -104,6 +111,7 @@ begin
   FMVC.AddController(TStepsController);
   FMVC.AddController(TStatsController);
   FMVC.AddController(TInventoryController);
+  FMVC.AddController(TDiceController);
 end;
 
 procedure TFFWebModule.WebModuleDestroy(Sender: TObject);

@@ -124,6 +124,9 @@
         <DCCReference Include="controllers\Controllers.StepsU.pas"/>
         <DCCReference Include="controllers\Controllers.StatsU.pas"/>
         <DCCReference Include="controllers\Controllers.InventoryU.pas"/>
+        <DCCReference Include="models\Models.DiceRollU.pas"/>
+        <DCCReference Include="repositories\Repositories.DiceRollsU.pas"/>
+        <DCCReference Include="controllers\Controllers.DiceU.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

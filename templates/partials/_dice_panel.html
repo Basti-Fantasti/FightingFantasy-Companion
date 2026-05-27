@@ -1,4 +1,23 @@
 <div id="dice-panel" class="box">
   <h3 class="subtitle is-5">{{:l10n.dice_panel_title}}</h3>
-  <!-- filled in Task 9.1 -->
+  <div class="buttons">
+    <button class="button" hx-post="/adventures/{{:adventure.id}}/roll"
+            hx-vals='{"expression":"2d6"}' hx-target="#dice-panel" hx-swap="outerHTML">
+      {{:l10n.dice_roll_2d6}}
+    </button>
+    <button class="button" hx-post="/adventures/{{:adventure.id}}/roll"
+            hx-vals='{"expression":"1d6"}' hx-target="#dice-panel" hx-swap="outerHTML">
+      {{:l10n.dice_roll_1d6}}
+    </button>
+  </div>
+  {{if last_roll}}
+  <p>{{:l10n.dice_last}} {{:last_roll.expression}} = <strong>{{:last_roll.result}}</strong></p>
+  {{endif}}
+  {{if recent_rolls}}
+  <ul class="is-size-7">
+  {{for r in recent_rolls}}
+    <li>{{:r.expression}}: {{:r.result}}</li>
+  {{endfor}}
+  </ul>
+  {{endif}}
 </div>
