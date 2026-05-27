@@ -33,7 +33,8 @@ begin
 end;
 
 begin
-  if not WebRequestHandler.WebModuleClass.InheritsFrom(TWebModule) then
+  if (WebRequestHandler.WebModuleClass = nil) or
+     not WebRequestHandler.WebModuleClass.InheritsFrom(TWebModule) then
     WebRequestHandler.WebModuleClass := WebModuleClass;
   try
     RunServer(TAppConfig.HttpPort);
