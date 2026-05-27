@@ -111,6 +111,24 @@
         <DCCReference Include="Tests.Services.AdventureStateU.pas"/>
         <DCCReference Include="Tests.Services.AdventureStateU.Inventory.pas"/>
         <DCCReference Include="Tests.Services.GraphBuilderU.pas"/>
+        <DCCReference Include="..\config\AppConfigU.pas"/>
+        <DCCReference Include="..\controllers\Controllers.BaseU.pas"/>
+        <DCCReference Include="..\controllers\Controllers.AuthU.pas"/>
+        <DCCReference Include="..\controllers\Controllers.BooksU.pas"/>
+        <DCCReference Include="..\controllers\Controllers.AdventuresU.pas"/>
+        <DCCReference Include="..\controllers\Controllers.StepsU.pas"/>
+        <DCCReference Include="..\controllers\Controllers.StatsU.pas"/>
+        <DCCReference Include="..\controllers\Controllers.InventoryU.pas"/>
+        <DCCReference Include="..\controllers\Controllers.DiceU.pas"/>
+        <DCCReference Include="..\controllers\Controllers.GraphU.pas"/>
+        <DCCReference Include="..\models\Models.DiceRollU.pas"/>
+        <DCCReference Include="..\repositories\Repositories.DiceRollsU.pas"/>
+        <DCCReference Include="..\webmodule\WebModuleU.pas">
+            <Form>FFWebModule</Form>
+            <FormType>dfm</FormType>
+            <DesignClass>TWebModule</DesignClass>
+        </DCCReference>
+        <DCCReference Include="Tests.E2E.PlaythroughU.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

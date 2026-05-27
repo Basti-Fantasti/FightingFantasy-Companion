@@ -55,7 +55,21 @@ uses
   Tests.Repositories.StepsU in 'Tests.Repositories.StepsU.pas',
   Tests.Services.AdventureStateU in 'Tests.Services.AdventureStateU.pas',
   Tests.Services.AdventureStateU.Inventory in 'Tests.Services.AdventureStateU.Inventory.pas',
-  Tests.Services.GraphBuilderU in 'Tests.Services.GraphBuilderU.pas';
+  Tests.Services.GraphBuilderU in 'Tests.Services.GraphBuilderU.pas',
+  AppConfigU in '..\config\AppConfigU.pas',
+  Controllers.BaseU in '..\controllers\Controllers.BaseU.pas',
+  Controllers.AuthU in '..\controllers\Controllers.AuthU.pas',
+  Controllers.BooksU in '..\controllers\Controllers.BooksU.pas',
+  Controllers.AdventuresU in '..\controllers\Controllers.AdventuresU.pas',
+  Controllers.StepsU in '..\controllers\Controllers.StepsU.pas',
+  Controllers.StatsU in '..\controllers\Controllers.StatsU.pas',
+  Controllers.InventoryU in '..\controllers\Controllers.InventoryU.pas',
+  Controllers.DiceU in '..\controllers\Controllers.DiceU.pas',
+  Controllers.GraphU in '..\controllers\Controllers.GraphU.pas',
+  Models.DiceRollU in '..\models\Models.DiceRollU.pas',
+  Repositories.DiceRollsU in '..\repositories\Repositories.DiceRollsU.pas',
+  WebModuleU in '..\webmodule\WebModuleU.pas' {FFWebModule: TWebModule},
+  Tests.E2E.PlaythroughU in 'Tests.E2E.PlaythroughU.pas';
 
 var
   LRunner: ITestRunner;
