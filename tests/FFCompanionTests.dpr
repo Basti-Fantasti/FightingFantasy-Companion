@@ -44,6 +44,7 @@ uses
   Models.InventoryEventU in '..\models\Models.InventoryEventU.pas',
   Repositories.InventoryEventsU in '..\repositories\Repositories.InventoryEventsU.pas',
   Services.AdventureStateU in '..\services\Services.AdventureStateU.pas',
+  Services.GraphBuilderU in '..\services\Services.GraphBuilderU.pas',
   Tests.L10nU in 'Tests.L10nU.pas',
   Tests.MigrationU in 'Tests.MigrationU.pas',
   Tests.Services.AuthU in 'Tests.Services.AuthU.pas',
@@ -53,7 +54,8 @@ uses
   Tests.Repositories.AdventuresU in 'Tests.Repositories.AdventuresU.pas',
   Tests.Repositories.StepsU in 'Tests.Repositories.StepsU.pas',
   Tests.Services.AdventureStateU in 'Tests.Services.AdventureStateU.pas',
-  Tests.Services.AdventureStateU.Inventory in 'Tests.Services.AdventureStateU.Inventory.pas';
+  Tests.Services.AdventureStateU.Inventory in 'Tests.Services.AdventureStateU.Inventory.pas',
+  Tests.Services.GraphBuilderU in 'Tests.Services.GraphBuilderU.pas';
 
 var
   LRunner: ITestRunner;

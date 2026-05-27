@@ -67,6 +67,15 @@ type
     function ListByAdventure(AAdventureId: Int64;
       AIncludeUndone: Boolean): TArray<TStep>;
 
+    /// <summary>
+    ///   Lists steps for an adventure in chronological (seq ASC) order. Used
+    ///   by graph construction where the natural traversal direction is
+    ///   first-step-first. Excludes soft-undone rows when AIncludeUndone is
+    ///   False.
+    /// </summary>
+    function ListByAdventureAsc(AAdventureId: Int64;
+      AIncludeUndone: Boolean): TArray<TStep>;
+
     /// <summary>Sets the undone flag of a single step row.</summary>
     procedure SetUndone(AStepId: Int64; AUndone: Boolean);
 
@@ -223,6 +232,39 @@ begin
     if not AIncludeUndone then
       LSql := LSql + ' AND undone=0';
     LSql := LSql + ' ORDER BY seq DESC';
+    LQ.Open(LSql, [AAdventureId]);
+    while not LQ.Eof do
+    begin
+      ReadStepRow(LQ, LStep);
+      Result := Result + [LStep];
+      LQ.Next;
+    end;
+  finally
+    LQ.Free;
+    LC.Free;
+  end;
+end;
+
+function TStepsRepo.ListByAdventureAsc(AAdventureId: Int64;
+  AIncludeUndone: Boolean): TArray<TStep>;
+var
+  LC: TFDConnection;
+  LQ: TFDQuery;
+  LStep: TStep;
+  LSql: string;
+begin
+  Result := nil;
+  LC := NewConn(FConn);
+  LQ := TFDQuery.Create(nil);
+  try
+    LQ.Connection := LC;
+    LSql :=
+      'SELECT id, adventure_id, seq, from_section, to_section, note, ' +
+      'flag_fight, flag_item, flag_stat, undone, created_at ' +
+      'FROM steps WHERE adventure_id=:a';
+    if not AIncludeUndone then
+      LSql := LSql + ' AND undone=0';
+    LSql := LSql + ' ORDER BY seq ASC';
     LQ.Open(LSql, [AAdventureId]);
     while not LQ.Eof do
     begin
