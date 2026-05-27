@@ -23,6 +23,7 @@
   "flash_login_failed": "Falscher Benutzername oder falsches Passwort.",
   "flash_signup_taken": "Benutzername ist bereits vergeben.",
   "flash_concurrency": "Dieses Abenteuer wurde in einem anderen Tab geändert. Bitte neu laden.",
+  "flash_no_current_step": "Logge zuerst einen Schritt, bevor du Werte änderst.",
   "confirm_delete": "Wirklich löschen?",
   "login_title": "Anmelden",
   "login_no_account": "Noch kein Konto?",

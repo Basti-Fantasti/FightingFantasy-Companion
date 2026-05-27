@@ -1,1 +1,42 @@
-<div id="modal-host"></div>
+<div class="modal is-active">
+  <div class="modal-background" onclick="document.dispatchEvent(new CustomEvent('close-modal'))"></div>
+  <div class="modal-card">
+    <header class="modal-card-head"><p class="modal-card-title">{{:label}}</p></header>
+    <section class="modal-card-body has-text-centered">
+      <div class="buttons is-centered">
+        <button class="button is-large is-touch"
+                hx-post="{{:preview_url}}" hx-target="#modal-host"
+                hx-vals='{"stat_def_id":"{{:stat_def_id}}","original":"{{:original}}","working":"{{:working}}","delta":"-5","reason":"{{:reason}}"}'>&minus;5</button>
+        <button class="button is-large is-touch"
+                hx-post="{{:preview_url}}" hx-target="#modal-host"
+                hx-vals='{"stat_def_id":"{{:stat_def_id}}","original":"{{:original}}","working":"{{:working}}","delta":"-1","reason":"{{:reason}}"}'>&minus;1</button>
+      </div>
+      <input class="input is-large has-text-centered" type="number" value="{{:working}}"
+             hx-post="{{:preview_url}}" hx-trigger="change" hx-target="#modal-host"
+             hx-vals='{"stat_def_id":"{{:stat_def_id}}","original":"{{:original}}","delta":"0","reason":"{{:reason}}"}' name="working">
+      <p class="has-text-grey">(was {{:original}} &bull; &Delta; {{:delta_display}})</p>
+      <div class="buttons is-centered">
+        <button class="button is-large is-touch"
+                hx-post="{{:preview_url}}" hx-target="#modal-host"
+                hx-vals='{"stat_def_id":"{{:stat_def_id}}","original":"{{:original}}","working":"{{:working}}","delta":"+1","reason":"{{:reason}}"}'>+1</button>
+        <button class="button is-large is-touch"
+                hx-post="{{:preview_url}}" hx-target="#modal-host"
+                hx-vals='{"stat_def_id":"{{:stat_def_id}}","original":"{{:original}}","working":"{{:working}}","delta":"+5","reason":"{{:reason}}"}'>+5</button>
+      </div>
+      <div class="field mt-3">
+        <label class="label">{{:l10n.lbl_reason}}</label>
+        <input class="input" name="reason" value="{{:reason}}">
+      </div>
+    </section>
+    <footer class="modal-card-foot">
+      <button class="button" onclick="document.dispatchEvent(new CustomEvent('close-modal'))">{{:l10n.btn_cancel}}</button>
+      <form hx-post="{{:commit_url}}" hx-target="#stats-panel" hx-swap="outerHTML">
+        <input type="hidden" name="stat_def_id" value="{{:stat_def_id}}">
+        <input type="hidden" name="working" value="{{:working}}">
+        <input type="hidden" name="reason" value="{{:reason}}">
+        <input type="hidden" name="last_step_id" value="{{:last_step_id}}">
+        <button class="button is-primary">{{:l10n.btn_confirm}}</button>
+      </form>
+    </footer>
+  </div>
+</div>

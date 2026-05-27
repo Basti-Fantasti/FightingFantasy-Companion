@@ -71,6 +71,14 @@ type
     procedure SetUndone(AStepId: Int64; AUndone: Boolean);
 
     /// <summary>
+    ///   Sets the flag_stat marker on a single step row. Called by the stats
+    ///   controller when a stat change is committed against a previously
+    ///   unflagged step so the timeline icon reflects that the step now
+    ///   carries a stat mutation.
+    /// </summary>
+    procedure SetFlagStat(AStepId: Int64; AValue: Boolean);
+
+    /// <summary>
     ///   Loads a step by id.
     /// </summary>
     /// <exception cref="EStepNotFound">When no row matches.</exception>
@@ -229,6 +237,21 @@ begin
   LC := NewConn(FConn);
   try
     LC.ExecSQL('UPDATE steps SET undone=:u WHERE id=:i', [LValue, AStepId]);
+  finally
+    LC.Free;
+  end;
+end;
+
+procedure TStepsRepo.SetFlagStat(AStepId: Int64; AValue: Boolean);
+var
+  LC: TFDConnection;
+  LValue: Integer;
+begin
+  if AValue then LValue := 1 else LValue := 0;
+  LC := NewConn(FConn);
+  try
+    LC.ExecSQL('UPDATE steps SET flag_stat=:v WHERE id=:i',
+      [LValue, AStepId]);
   finally
     LC.Free;
   end;

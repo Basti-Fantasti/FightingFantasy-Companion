@@ -120,6 +120,7 @@
         <DCCReference Include="controllers\Controllers.BooksU.pas"/>
         <DCCReference Include="controllers\Controllers.AdventuresU.pas"/>
         <DCCReference Include="controllers\Controllers.StepsU.pas"/>
+        <DCCReference Include="controllers\Controllers.StatsU.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

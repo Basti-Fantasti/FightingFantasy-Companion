@@ -23,6 +23,7 @@
   "flash_login_failed": "Wrong username or password.",
   "flash_signup_taken": "Username is already taken.",
   "flash_concurrency": "This adventure changed in another tab. Reload to continue.",
+  "flash_no_current_step": "Log a step first before changing stats.",
   "confirm_delete": "Are you sure you want to delete this?",
   "login_title": "Sign in",
   "login_no_account": "No account?",

@@ -3,7 +3,17 @@
   {{for stat in stats}}
   <div class="level">
     <div class="level-left"><strong>{{:stat.display_name}}</strong></div>
-    <div class="level-right">{{:stat.value}}</div>
+    <div class="level-right">
+      {{if stat.is_integer}}
+      <button class="button is-large is-touch"
+              hx-get="/adventures/{{:adventure.id}}/stats/{{:stat.stat_def_id}}/modal"
+              hx-target="#modal-host" hx-swap="innerHTML">
+        {{:stat.value}}
+      </button>
+      {{else}}
+      <span>{{:stat.value}}</span>
+      {{endif}}
+    </div>
   </div>
   {{endfor}}
 </div>

@@ -378,6 +378,10 @@ begin
         LStatObj.S['display_name'] := LStat.DisplayName;
         LStatObj.S['kind']         := LStat.Kind;
         LStatObj.S['value']        := LStat.Value;
+        // Used by _stats_panel.html to decide between an editable button and a
+        // read-only span. Kept as a pre-resolved Boolean to keep the template
+        // logic trivial (independent of the TemplatePro filter syntax).
+        LStatObj.B['is_integer']   := SameText(LStat.Kind, 'integer');
       end;
     finally
       LStatList.Free;
