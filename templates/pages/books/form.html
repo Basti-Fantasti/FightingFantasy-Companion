@@ -1,0 +1,100 @@
+{{extends "../../layouts/base.html"}}
+{{block "title"}}{{:l10n.book_new_title}} - {{:l10n.app_name}}{{endblock}}
+{{block "content"}}
+<h1 class="title">{{:l10n.book_new_title}}</h1>
+<form method="post" action="/books">
+  <div class="field">
+    <label class="label">Slug</label>
+    <div class="control">
+      <input class="input" name="slug" pattern="[a-z0-9\-]+" required>
+    </div>
+    <p class="help">lowercase, digits, hyphens</p>
+  </div>
+
+  <div class="field">
+    <label class="label">{{:l10n.book_title_label}}</label>
+    <input type="hidden" name="title_lang" value="{{:current_lang}}">
+    <div class="control">
+      <input class="input" name="title_text" required>
+    </div>
+  </div>
+
+  <div class="field">
+    <label class="label">{{:l10n.book_author_label}}</label>
+    <div class="control">
+      <input class="input" name="author">
+    </div>
+  </div>
+
+  <h2 class="subtitle">Stats</h2>
+  <div id="stats-rows">
+    <div class="field is-grouped">
+      <div class="control">
+        <input class="input" name="stat_name[]" placeholder="skill">
+      </div>
+      <div class="control">
+        <div class="select">
+          <select name="stat_kind[]">
+            <option>integer</option>
+            <option>text</option>
+            <option>checkbox</option>
+          </select>
+        </div>
+      </div>
+      <div class="control">
+        <input class="input" name="stat_default[]" placeholder="0">
+      </div>
+      <div class="control is-expanded">
+        <input class="input" name="stat_title[]" placeholder="display name">
+      </div>
+    </div>
+    <div class="field is-grouped">
+      <div class="control">
+        <input class="input" name="stat_name[]" placeholder="stamina">
+      </div>
+      <div class="control">
+        <div class="select">
+          <select name="stat_kind[]">
+            <option>integer</option>
+            <option>text</option>
+            <option>checkbox</option>
+          </select>
+        </div>
+      </div>
+      <div class="control">
+        <input class="input" name="stat_default[]" placeholder="0">
+      </div>
+      <div class="control is-expanded">
+        <input class="input" name="stat_title[]" placeholder="display name">
+      </div>
+    </div>
+    <div class="field is-grouped">
+      <div class="control">
+        <input class="input" name="stat_name[]" placeholder="luck">
+      </div>
+      <div class="control">
+        <div class="select">
+          <select name="stat_kind[]">
+            <option>integer</option>
+            <option>text</option>
+            <option>checkbox</option>
+          </select>
+        </div>
+      </div>
+      <div class="control">
+        <input class="input" name="stat_default[]" placeholder="0">
+      </div>
+      <div class="control is-expanded">
+        <input class="input" name="stat_title[]" placeholder="display name">
+      </div>
+    </div>
+  </div>
+
+  {{if error}}<div class="notification is-danger">{{:error}}</div>{{endif}}
+
+  <div class="field">
+    <button class="button is-primary">{{:l10n.btn_create}}</button>
+    <a class="button" href="/books">{{:l10n.btn_cancel}}</a>
+  </div>
+</form>
+{{endblock}}

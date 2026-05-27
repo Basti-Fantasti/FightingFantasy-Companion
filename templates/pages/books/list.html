@@ -1,0 +1,26 @@
+{{extends "../../layouts/base.html"}}
+{{block "title"}}{{:l10n.book_list_title}} - {{:l10n.app_name}}{{endblock}}
+{{block "content"}}
+<h1 class="title">{{:l10n.book_list_title}}</h1>
+<div class="buttons">
+  <a class="button is-primary" href="/books/new">+ {{:l10n.book_new_title}}</a>
+</div>
+<table class="table is-fullwidth is-striped">
+  <thead>
+    <tr>
+      <th>{{:l10n.book_title_label}}</th>
+      <th>{{:l10n.book_author_label}}</th>
+      <th>{{:l10n.lbl_status}}</th>
+    </tr>
+  </thead>
+  <tbody>
+  {{for book in books}}
+    <tr>
+      <td>{{:book.title}}</td>
+      <td>{{:book.author}}</td>
+      <td>{{if book.custom}}custom{{else}}seed{{endif}}</td>
+    </tr>
+  {{endfor}}
+  </tbody>
+</table>
+{{endblock}}
