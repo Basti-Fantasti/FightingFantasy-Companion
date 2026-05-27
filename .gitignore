@@ -1,0 +1,20 @@
+# Delphi build artifacts
+bin/
+Win32/
+Win64/
+Linux64/
+Android/
+Android64/
+*.dcu
+*.o
+*.local
+*.identcache
+*.tvsconfig
+*.stat
+*.drc
+*.map
+*.rsm
+*.res
+__history/
+__recovery/
+*.~*
