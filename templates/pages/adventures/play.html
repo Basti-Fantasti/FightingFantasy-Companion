@@ -36,5 +36,74 @@
   </div>
 </div>
 <div id="modal-host"></div>
-<script>window.ffAdventureId = {{:adventure.id}};</script>
+{{endblock}}
+{{block "scripts"}}
+<script src="/static/js/cytoscape.min.js"></script>
+<script>
+  window.ffAdventureId = {{:adventure.id}};
+  let ffCy = null;
+  window.ffRefreshGraph = async function() {
+    if (!document.getElementById('cy')) return;
+    const r = await fetch('/adventures/' + window.ffAdventureId + '/graph.json');
+    if (!r.ok) return;
+    const data = await r.json();
+    const elements = [
+      ...data.nodes.map(n => ({
+        data: { id: n.id, label: '§' + n.section, visits: n.visits },
+        classes: (n.section === data.current ? 'current ' : '') + (n.visits > 1 ? 'revisit' : '')
+      })),
+      ...data.edges.map(e => ({
+        data: { source: e.from, target: e.to, label: String(e.seq) }
+      }))
+    ];
+    if (!ffCy) {
+      ffCy = cytoscape({
+        container: document.getElementById('cy'),
+        elements: elements,
+        style: [
+          { selector: 'node', style: {
+              'label': 'data(label)',
+              'background-color': '#3273dc',
+              'color': '#fff',
+              'text-valign': 'center',
+              'text-halign': 'center',
+              'font-size': 10
+          }},
+          { selector: 'node.current', style: {
+              'background-color': '#ffdd57',
+              'color': '#000',
+              'border-width': 2,
+              'border-color': '#363636'
+          }},
+          { selector: 'node.revisit', style: {
+              'border-width': 3,
+              'border-color': '#ff3860'
+          }},
+          { selector: 'edge', style: {
+              'curve-style': 'bezier',
+              'target-arrow-shape': 'triangle',
+              'arrow-scale': 0.8,
+              'label': 'data(label)',
+              'font-size': 8,
+              'width': 1.5,
+              'line-color': '#7a7a7a',
+              'target-arrow-color': '#7a7a7a'
+          }}
+        ],
+        layout: { name: 'cose', animate: true, fit: true, padding: 30 }
+      });
+    } else {
+      ffCy.json({ elements: elements });
+      ffCy.layout({ name: 'cose', animate: true }).run();
+    }
+  };
+
+  // Render on tab activation (lazy — Cytoscape needs the container visible)
+  document.addEventListener('DOMContentLoaded', () => {
+    const tabGraph = document.getElementById('tab-graph');
+    if (tabGraph) {
+      tabGraph.addEventListener('click', () => setTimeout(() => window.ffRefreshGraph(), 0));
+    }
+  });
+</script>
 {{endblock}}
