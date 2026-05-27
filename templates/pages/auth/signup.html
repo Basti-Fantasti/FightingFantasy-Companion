@@ -1,0 +1,30 @@
+{{extends "../../layouts/base.html"}}
+{{block "title"}}{{:l10n.signup_title}} - {{:l10n.app_name}}{{endblock}}
+{{block "content"}}
+<section class="hero is-fullheight-with-navbar">
+  <div class="hero-body">
+    <div class="container">
+      <div class="columns is-centered">
+        <div class="column is-one-third">
+          <h1 class="title">{{:l10n.signup_title}}</h1>
+          <form method="post" action="/signup">
+            <div class="field">
+              <label class="label">{{:l10n.lbl_username}}</label>
+              <div class="control"><input class="input" type="text" name="username" required></div>
+            </div>
+            <div class="field">
+              <label class="label">{{:l10n.lbl_password}}</label>
+              <div class="control"><input class="input" type="password" name="password" required></div>
+            </div>
+            {{if error}}<div class="notification is-danger">{{:error}}</div>{{endif}}
+            <div class="field">
+              <button class="button is-primary">{{:l10n.nav_signup}}</button>
+            </div>
+          </form>
+          <p><a href="/login">{{:l10n.nav_login}}</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{{endblock}}

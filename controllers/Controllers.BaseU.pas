@@ -71,6 +71,15 @@ type
     /// <summary>Thin wrapper around RenderView for symmetry with the layout chrome.</summary>
     function RenderPage(const AViewName: string): string;
 
+    /// <summary>
+    ///   Looks up a localised string in the catalogue loaded for the current
+    ///   request. Use this when a controller needs the translated text of an
+    ///   l10n key (e.g. for ViewData passed to a template).
+    /// </summary>
+    /// <param name="AKey">l10n key (must exist in both de.json and en.json).</param>
+    /// <returns>Translated text, or empty string when the key is absent.</returns>
+    function L10n(const AKey: string): string;
+
     /// <summary>Numeric id of the logged-in user; 0 when anonymous.</summary>
     property CurrentUserId: Int64 read FCurrentUserId;
 
@@ -184,6 +193,14 @@ end;
 function TBaseController.RenderPage(const AViewName: string): string;
 begin
   Result := RenderView(AViewName);
+end;
+
+function TBaseController.L10n(const AKey: string): string;
+begin
+  if Assigned(FL10n) and FL10n.Contains(AKey) then
+    Result := FL10n.S[AKey]
+  else
+    Result := '';
 end;
 
 end.

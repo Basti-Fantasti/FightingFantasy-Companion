@@ -58,7 +58,8 @@ uses
   MVCFramework.Middleware.StaticFiles,
   MVCFramework.Middleware.Session,
   AppConfigU,
-  Repositories.MigrationU;
+  Repositories.MigrationU,
+  Controllers.AuthU;
 
 procedure TFFWebModule.WebModuleCreate(Sender: TObject);
 var
@@ -80,10 +81,9 @@ begin
   FMVC.AddMiddleware(TMVCStaticFilesMiddleware.Create('/static',
     TPath.Combine(TAppConfig.AppPath, 'static')));
   FMVC.AddMiddleware(UseMemorySessionMiddleware(0));
-  // Controllers added in later phases:
-  // FMVC.AddController(TAuthController);
-  // FMVC.AddController(TAdventuresController);
-  // ...
+
+  FMVC.AddController(TAuthController);
+  // Further controllers (adventures, books, steps, ...) are added in later phases.
 end;
 
 procedure TFFWebModule.WebModuleDestroy(Sender: TObject);
