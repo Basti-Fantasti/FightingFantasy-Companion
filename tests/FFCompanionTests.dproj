@@ -89,6 +89,9 @@
         <DCCReference Include="..\services\Services.LocalizedTitleU.pas"/>
         <DCCReference Include="..\services\Services.YamlReaderU.pas"/>
         <DCCReference Include="..\services\Services.BookCatalogU.pas"/>
+        <DCCReference Include="..\models\Models.AdventureU.pas"/>
+        <DCCReference Include="..\repositories\Repositories.AdventuresU.pas"/>
+        <DCCReference Include="..\services\Services.AdventureStateU.pas"/>
         <DCCReference Include="TestHelpers.DbU.pas"/>
         <DCCReference Include="Tests.L10nU.pas"/>
         <DCCReference Include="Tests.MigrationU.pas"/>
@@ -96,6 +99,7 @@
         <DCCReference Include="Tests.Services.LocalizedTitleU.pas"/>
         <DCCReference Include="Tests.Services.YamlReaderU.pas"/>
         <DCCReference Include="Tests.Services.BookCatalogU.pas"/>
+        <DCCReference Include="Tests.Repositories.AdventuresU.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

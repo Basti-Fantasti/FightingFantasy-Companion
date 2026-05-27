@@ -109,6 +109,9 @@
         <DCCReference Include="services\Services.LocalizedTitleU.pas"/>
         <DCCReference Include="services\Services.YamlReaderU.pas"/>
         <DCCReference Include="services\Services.BookCatalogU.pas"/>
+        <DCCReference Include="models\Models.AdventureU.pas"/>
+        <DCCReference Include="repositories\Repositories.AdventuresU.pas"/>
+        <DCCReference Include="services\Services.AdventureStateU.pas"/>
         <DCCReference Include="controllers\Controllers.AuthU.pas"/>
         <DCCReference Include="controllers\Controllers.BooksU.pas"/>
         <BuildConfiguration Include="Base">
