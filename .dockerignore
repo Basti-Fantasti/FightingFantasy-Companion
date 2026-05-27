@@ -1,0 +1,15 @@
+.git/
+.gitignore
+bin/Win64/
+bin/Linux64/Debug/
+__history/
+__recovery/
+*.local
+*.identcache
+*.tvsconfig
+*.dproj.local
+tests/
+docs/
+README.md
+.dockerignore
+docker/data/

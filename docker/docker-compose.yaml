@@ -1,0 +1,16 @@
+services:
+  ffcompanion:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: ffcompanion:latest
+    container_name: ffcompanion
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      DEFAULT_LANGUAGE: de
+      HTTP_PORT: 8080
+      DATABASE_PATH: /app/data/ffcompanion.db
+    volumes:
+      - ./data:/app/data
