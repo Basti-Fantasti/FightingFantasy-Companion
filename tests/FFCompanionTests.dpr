@@ -22,8 +22,10 @@ uses
   DUnitX.Loggers.Console,
   DUnitX.TestFramework,
   MVCFramework.SQLGenerators.Sqlite,
+  Repositories.MigrationU in '..\repositories\Repositories.MigrationU.pas',
+  TestHelpers.DbU in 'TestHelpers.DbU.pas',
   Tests.L10nU in 'Tests.L10nU.pas',
-  TestHelpers.DbU in 'TestHelpers.DbU.pas';
+  Tests.MigrationU in 'Tests.MigrationU.pas';
 
 var
   LRunner: ITestRunner;

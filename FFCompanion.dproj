@@ -97,6 +97,7 @@
         </DCCReference>
         <DCCReference Include="config\AppConfigU.pas"/>
         <DCCReference Include="controllers\Controllers.BaseU.pas"/>
+        <DCCReference Include="repositories\Repositories.MigrationU.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

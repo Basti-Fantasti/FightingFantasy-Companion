@@ -57,10 +57,18 @@ uses
   MVCFramework.View.Renderers.TemplatePro,
   MVCFramework.Middleware.StaticFiles,
   MVCFramework.Middleware.Session,
-  AppConfigU;
+  AppConfigU,
+  Repositories.MigrationU;
 
 procedure TFFWebModule.WebModuleCreate(Sender: TObject);
+var
+  LConnName: string;
 begin
+  // Ensure the SQLite database exists and is migrated before any controller
+  // can touch it. Runs once per WebModule (one per worker on Indy).
+  LConnName := TMigrationRunner.CreateFileConnection(TAppConfig.DatabasePath);
+  TMigrationRunner.RunOnConnection(LConnName);
+
   FMVC := TMVCEngine.Create(Self,
     procedure(Config: TMVCConfig)
     begin

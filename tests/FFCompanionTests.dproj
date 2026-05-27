@@ -77,8 +77,10 @@
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
-        <DCCReference Include="Tests.L10nU.pas"/>
+        <DCCReference Include="..\repositories\Repositories.MigrationU.pas"/>
         <DCCReference Include="TestHelpers.DbU.pas"/>
+        <DCCReference Include="Tests.L10nU.pas"/>
+        <DCCReference Include="Tests.MigrationU.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
