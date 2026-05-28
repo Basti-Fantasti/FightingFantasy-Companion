@@ -18,3 +18,13 @@ Android64/
 __history/
 __recovery/
 *.~*
+
+# Internal design docs / planning — kept local, never published
+docs/
+
+# Delphi IDE per-user files
+*.delphilsp.json
+*.dsk
+
+# Local runtime data (SQLite etc.)
+docker/data/

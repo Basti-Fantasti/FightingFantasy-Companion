@@ -1,11 +1,9 @@
 services:
   ffcompanion:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
     image: ghcr.io/basti-fantasti/fightingfantasy-companion:latest
     container_name: ffcompanion
     restart: unless-stopped
+    pull_policy: always
     ports:
       - "8099:8080"
     environment:
