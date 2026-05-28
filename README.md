@@ -96,45 +96,6 @@ or you spot a wording that could be improved, please **open a pull request**
 with the new catalog, or **open a GitHub issue** describing what's missing
 and we'll coordinate from there.
 
-## Building & publishing the image (maintainers)
-
-The Linux64 binary is built externally with the Windows-hosted Delphi
-cross-compiler (via the `delphi-build` MCP server); the Docker image only
-packages the binary plus runtime assets.
-
-```bash
-# 1. Build the Linux64 binary
-#    Output: bin/Linux64/Release/FFCompanion
-
-# 2. Build the image locally (tags as ghcr.io/basti-fantasti/fightingfantasy-companion:latest)
-docker compose -f docker/docker-compose.yaml build
-
-# 3. Log in to the GitHub Container Registry
-#    Create a Personal Access Token (classic) with scope: write:packages
-echo "$GHCR_TOKEN" | docker login ghcr.io -u Basti-Fantasti --password-stdin
-
-# 4. Push
-docker push ghcr.io/basti-fantasti/fightingfantasy-companion:latest
-
-# Optional: tag a release
-docker tag ghcr.io/basti-fantasti/fightingfantasy-companion:latest \
-           ghcr.io/basti-fantasti/fightingfantasy-companion:v0.1.0
-docker push ghcr.io/basti-fantasti/fightingfantasy-companion:v0.1.0
-```
-
-The first push creates the package as **private** by default. To make it
-pullable without authentication (as in the *Quick start* above), open it on
-github.com → *Packages* → *Package settings* → *Change visibility* → public.
-While there, link it to the repo so it shows up under the repository's
-*Packages* sidebar.
-
-### Running from source (development)
-
-```bash
-# Build + run, rebuilding the image each time
-docker compose -f docker/docker-compose.yaml up -d --build
-```
-
 ## Project layout
 
 ```
