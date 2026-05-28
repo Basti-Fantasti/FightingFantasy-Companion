@@ -39,7 +39,8 @@ unit Services.AdventureStateU;
 interface
 
 uses
-  System.Generics.Collections;
+  System.Generics.Collections,
+  Models.AdventureSpellU;
 
 type
   /// <summary>
@@ -106,6 +107,16 @@ type
     ///   Callers must Free the returned list.
     /// </summary>
     function GetCurrentInventory(AAdventureId: Int64): TList<TInventoryItem>;
+
+    /// <summary>
+    ///   Returns one TAdventureSpellGroup per distinct spell_def used in the
+    ///   adventure, with available/consumed counts and a localised display
+    ///   name resolved for ALang. Falls back to any other seeded language when
+    ///   ALang has no entry, and to the spell's slug when no titles exist.
+    ///   Result is ordered by spell_defs.ord ASC.
+    /// </summary>
+    function GetSpellSnapshot(AAdventureId: Int64;
+      const ALang: string): TArray<TAdventureSpellGroup>;
   end;
 
 implementation
@@ -119,6 +130,8 @@ uses
   Repositories.AdventuresU, Repositories.BooksU,
   Repositories.StatChangesU,
   Repositories.InventoryEventsU,
+  Repositories.SpellDefsU, Repositories.AdventureSpellsU,
+  Models.SpellDefU,
   Services.LocalizedTitleU;
 
 constructor TAdventureStateService.Create(const AConnectionName: string);
@@ -285,6 +298,55 @@ begin
     LQuantities.Free;
     LOrder.Free;
     LRepo.Free;
+  end;
+end;
+
+function TAdventureStateService.GetSpellSnapshot(AAdventureId: Int64;
+  const ALang: string): TArray<TAdventureSpellGroup>;
+var
+  LC: TFDConnection;
+  LQ: TFDQuery;
+  LGroup: TAdventureSpellGroup;
+begin
+  Result := nil;
+  LC := TFDConnection.Create(nil);
+  LQ := TFDQuery.Create(nil);
+  try
+    LC.ConnectionDefName := FConn;
+    LC.Open;
+    LQ.Connection := LC;
+    LQ.Open(
+      'SELECT sd.id, sd.slug, sd.ord, ' +
+      '       COALESCE(t1.display_name, t2.display_name, sd.slug) AS name, ' +
+      '       COALESCE(t1.description,  t2.description,  '''')     AS descr, ' +
+      '       SUM(CASE WHEN a.consumed_at IS NULL THEN 1 ELSE 0 END) AS avail, ' +
+      '       SUM(CASE WHEN a.consumed_at IS NULL THEN 0 ELSE 1 END) AS cons ' +
+      'FROM adventure_spells a ' +
+      'JOIN spell_defs sd ON sd.id = a.spell_def_id ' +
+      'LEFT JOIN spell_def_titles t1 ' +
+      '  ON t1.spell_def_id = sd.id AND t1.lang = :lang ' +
+      'LEFT JOIN spell_def_titles t2 ' +
+      '  ON t2.spell_def_id = sd.id ' +
+      '  AND t2.lang = (SELECT lang FROM spell_def_titles ' +
+      '                 WHERE spell_def_id = sd.id ORDER BY lang LIMIT 1) ' +
+      'WHERE a.adventure_id = :a ' +
+      'GROUP BY sd.id, sd.slug, sd.ord, name, descr ' +
+      'ORDER BY sd.ord ASC',
+      [ALang, AAdventureId]);
+    while not LQ.Eof do
+    begin
+      LGroup.SpellDefId  := LQ.FieldByName('id').AsLargeInt;
+      LGroup.Slug        := LQ.FieldByName('slug').AsString;
+      LGroup.DisplayName := LQ.FieldByName('name').AsString;
+      LGroup.Description := LQ.FieldByName('descr').AsString;
+      LGroup.Available   := LQ.FieldByName('avail').AsInteger;
+      LGroup.Consumed    := LQ.FieldByName('cons').AsInteger;
+      Result := Result + [LGroup];
+      LQ.Next;
+    end;
+  finally
+    LQ.Free;
+    LC.Free;
   end;
 end;
 

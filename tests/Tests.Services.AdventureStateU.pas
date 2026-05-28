@@ -33,6 +33,7 @@ type
     [Test] procedure CurrentStatsReflectLastChange;
     [Test] procedure UndoneStepStatChangesExcluded;
     [Test] procedure MultipleStatDefsTrackedIndependently;
+    [Test] procedure GetSpellSnapshot_GroupsAndLocalizesAvailableAndConsumed;
   end;
 
 implementation
@@ -44,6 +45,10 @@ uses
   Repositories.AdventuresU,
   Repositories.StepsU,
   Repositories.StatChangesU,
+  Repositories.SpellDefsU,
+  Repositories.AdventureSpellsU,
+  Models.SpellDefU,
+  Models.AdventureSpellU,
   Services.AdventureStateU,
   TestHelpers.DbU;
 
@@ -226,6 +231,71 @@ begin
     LSteps.Free;
     LBooks.Free;
     TDbHelper.Drop(LFx.Db);
+  end;
+end;
+
+procedure TAdventureStateServiceTests.GetSpellSnapshot_GroupsAndLocalizesAvailableAndConsumed;
+var
+  LConn: string;
+  LBooks: TBooksRepo; LUsers: TUsersRepo; LAdv: TAdventuresRepo;
+  LSteps: TStepsRepo; LSpells: TSpellDefsRepo; LAS: TAdventureSpellsRepo;
+  LBookId, LUserId, LAdvId, LStrengthId, LWeaknessId, LStepId: Int64;
+  LTitles: TArray<TSpellDefTitle>;
+  LSvc: TAdventureStateService;
+  LSnapshot: TArray<TAdventureSpellGroup>;
+begin
+  LConn := TDbHelper.NewMemoryDb;
+  try
+    LBooks := TBooksRepo.Create(LConn);
+    LUsers := TUsersRepo.Create(LConn);
+    LAdv := TAdventuresRepo.Create(LConn);
+    LSteps := TStepsRepo.Create(LConn);
+    LSpells := TSpellDefsRepo.Create(LConn);
+    LAS := TAdventureSpellsRepo.Create(LConn);
+    try
+      LBookId := LBooks.UpsertSeedBook('citadel','SJ');
+      LUserId := LUsers.Insert('alice','h');
+      LAdvId := LAdv.Create(LUserId, LBookId, 'Run');
+
+      LStrengthId := LSpells.UpsertSpellDef(LBookId, 'strength', 0);
+      SetLength(LTitles, 1);
+      LTitles[0].SpellDefId := LStrengthId;
+      LTitles[0].Lang := 'de';
+      LTitles[0].DisplayName := 'Stärke';
+      LTitles[0].Description := 'desc';
+      LSpells.SetTitles(LStrengthId, LTitles);
+
+      LWeaknessId := LSpells.UpsertSpellDef(LBookId, 'weakness', 1);
+      LTitles[0].SpellDefId := LWeaknessId;
+      LTitles[0].DisplayName := 'Schwäche';
+      LSpells.SetTitles(LWeaknessId, LTitles);
+
+      LAS.Insert(LAdvId, LStrengthId, 0);
+      LAS.Insert(LAdvId, LStrengthId, 1);
+      LAS.Insert(LAdvId, LWeaknessId, 2);
+      LStepId := LSteps.Insert(LAdvId, 0, 47, '', False, False, False);
+      LAS.ConsumeOldest(LAdvId, LStrengthId, LStepId);
+
+      LSvc := TAdventureStateService.Create(LConn);
+      try
+        LSnapshot := LSvc.GetSpellSnapshot(LAdvId, 'de');
+      finally
+        LSvc.Free;
+      end;
+
+      Assert.AreEqual<Integer>(2, Length(LSnapshot));
+      // Ordered by spell_defs.ord ASC
+      Assert.AreEqual('Stärke', LSnapshot[0].DisplayName);
+      Assert.AreEqual(1, LSnapshot[0].Available);
+      Assert.AreEqual(1, LSnapshot[0].Consumed);
+      Assert.AreEqual('Schwäche', LSnapshot[1].DisplayName);
+      Assert.AreEqual(1, LSnapshot[1].Available);
+      Assert.AreEqual(0, LSnapshot[1].Consumed);
+    finally
+      LAS.Free; LSpells.Free; LSteps.Free; LAdv.Free; LUsers.Free; LBooks.Free;
+    end;
+  finally
+    TDbHelper.Drop(LConn);
   end;
 end;
 
