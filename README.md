@@ -115,8 +115,7 @@ tests/         DUnitX test suite
 ## Tests
 
 ```bash
-# Build the test runner (Win64 only):
-mcp__delphi-build__compile_delphi_project  # tests/FFCompanionTests.dproj
+# Build the test runner ./tests/FFCompanionTests.dproj using the Delphi IDE (Win64 only)
 
 # Run:
 tests/bin/Win64/Debug/FFCompanionTests.exe
