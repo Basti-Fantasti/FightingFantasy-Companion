@@ -33,7 +33,9 @@
 
     Memory ownership:
       Each TYamlBook owns a TDictionary<string,string> in Titles, and
-      every TYamlStat in Stats owns its own Titles dictionary. Records
+      every TYamlStat in Stats owns its own Titles dictionary. The same
+      applies to each TYamlStartingItem.Titles in StartingInventory and
+      each TYamlSpell.Names / TYamlSpell.Descriptions in Spells. Records
       cannot have destructors, so the CALLER is responsible for freeing
       these dictionaries (typically inside TBookCatalogService.LoadSeed
       after the upsert into SQLite).
@@ -61,13 +63,39 @@ type
   end;
 
   /// <summary>
-  ///   Parsed book entry. <c>Titles</c> and every <c>Stats[i].Titles</c>
+  ///   Parsed starting inventory entry. <c>Titles</c> is owned by the
+  ///   caller and MUST be freed once consumed. <c>Quantity</c> of 0
+  ///   means the field was absent in the source; callers should treat
+  ///   that as a default of 1.
+  /// </summary>
+  TYamlStartingItem = record
+    Slug: string;
+    Quantity: Integer;
+    Titles: TDictionary<string, string>;
+  end;
+
+  /// <summary>
+  ///   Parsed spell entry. Both <c>Names</c> and <c>Descriptions</c>
   ///   are owned by the caller and MUST be freed once consumed.
+  /// </summary>
+  TYamlSpell = record
+    Slug: string;
+    Names: TDictionary<string, string>;
+    Descriptions: TDictionary<string, string>;
+  end;
+
+  /// <summary>
+  ///   Parsed book entry. <c>Titles</c>, every <c>Stats[i].Titles</c>,
+  ///   every <c>StartingInventory[i].Titles</c>, and every
+  ///   <c>Spells[i].Names</c> / <c>Spells[i].Descriptions</c> are owned
+  ///   by the caller and MUST be freed once consumed.
   /// </summary>
   TYamlBook = record
     Slug, Author: string;
     Titles: TDictionary<string, string>;
     Stats: TArray<TYamlStat>;
+    StartingInventory: TArray<TYamlStartingItem>;
+    Spells: TArray<TYamlSpell>;
   end;
 
   /// <summary>Raised on any deviation from the accepted YAML subset.</summary>
@@ -109,6 +137,10 @@ resourcestring
   RS_ERR_INLINE_BRACES    = 'inline mapping must be wrapped in "{ ... }"';
   RS_ERR_INLINE_NEST      = 'inline mapping may nest only one level deep';
   RS_ERR_UNKNOWN_STAT     = 'unknown field "%s" in stat mapping';
+  RS_ERR_STARTING_ITEM_ITEM = 'expected starting_inventory list item starting with "- { ... }"';
+  RS_ERR_SPELL_ITEM         = 'expected spells list item starting with "- { ... }"';
+  RS_ERR_UNKNOWN_INV_FIELD  = 'unknown field "%s" in starting_inventory mapping';
+  RS_ERR_UNKNOWN_SPELL_FIELD = 'unknown field "%s" in spells mapping';
 
 procedure RaiseAt(ALineNo: Integer; const ADetail: string);
 begin
@@ -238,6 +270,37 @@ begin
   end;
 end;
 
+/// <summary>
+///   Strips a single pair of surrounding double quotes from <c>AValue</c>
+///   if present. Used by the spell parser, where descriptions may be
+///   quoted to allow punctuation such as commas. Existing stat values
+///   are unquoted and never pass through this function.
+/// </summary>
+function StripSurroundingDoubleQuotes(const AValue: string): string;
+begin
+  if (Length(AValue) >= 2)
+    and (AValue[1] = '"') and (AValue[Length(AValue)] = '"') then
+    Result := Copy(AValue, 2, Length(AValue) - 2)
+  else
+    Result := AValue;
+end;
+
+procedure ParseFlatInlineIntoUnquoting(const ABody: string; ALineNo: Integer;
+  ADict: TDictionary<string, string>);
+var
+  LP, LK, LV: string;
+begin
+  for LP in SplitTopLevelCommas(ABody, ALineNo) do
+  begin
+    if LP = '' then
+      Continue;
+    SplitKV(LP, ALineNo, LK, LV);
+    if (Pos('{', LV) > 0) or (Pos('}', LV) > 0) then
+      RaiseAt(ALineNo, RS_ERR_INLINE_NEST);
+    ADict.AddOrSetValue(LK, StripSurroundingDoubleQuotes(LV));
+  end;
+end;
+
 function ParseStatInline(const ALine: string; ALineNo: Integer): TYamlStat;
 var
   LBody, LP, LK, LV, LInner: string;
@@ -278,16 +341,95 @@ begin
   end;
 end;
 
+function ParseStartingItemInline(const ALine: string;
+  ALineNo: Integer): TYamlStartingItem;
+var
+  LBody, LP, LK, LV, LInner: string;
+begin
+  LBody := Trim(Copy(ALine, 3, MaxInt));
+  if (LBody = '') or (LBody[1] <> '{') or (LBody[Length(LBody)] <> '}') then
+    RaiseAt(ALineNo, RS_ERR_INLINE_BRACES);
+  LBody := Trim(Copy(LBody, 2, Length(LBody) - 2));
+  Result.Slug := '';
+  Result.Quantity := 0;
+  Result.Titles := TDictionary<string, string>.Create;
+  try
+    for LP in SplitTopLevelCommas(LBody, ALineNo) do
+    begin
+      if LP = '' then Continue;
+      SplitKV(LP, ALineNo, LK, LV);
+      if LK = 'slug' then Result.Slug := LV
+      else if LK = 'quantity' then Result.Quantity := StrToIntDef(LV, 0)
+      else if LK = 'titles' then
+      begin
+        if (LV = '') or (LV[1] <> '{') or (LV[Length(LV)] <> '}') then
+          RaiseAt(ALineNo, RS_ERR_INLINE_BRACES);
+        LInner := Trim(Copy(LV, 2, Length(LV) - 2));
+        ParseFlatInlineInto(LInner, ALineNo, Result.Titles);
+      end
+      else
+        RaiseAt(ALineNo, Format(RS_ERR_UNKNOWN_INV_FIELD, [LK]));
+    end;
+  except
+    Result.Titles.Free;
+    raise;
+  end;
+end;
+
+function ParseSpellInline(const ALine: string;
+  ALineNo: Integer): TYamlSpell;
+var
+  LBody, LP, LK, LV, LInner: string;
+begin
+  LBody := Trim(Copy(ALine, 3, MaxInt));
+  if (LBody = '') or (LBody[1] <> '{') or (LBody[Length(LBody)] <> '}') then
+    RaiseAt(ALineNo, RS_ERR_INLINE_BRACES);
+  LBody := Trim(Copy(LBody, 2, Length(LBody) - 2));
+  Result.Slug := '';
+  Result.Names := TDictionary<string, string>.Create;
+  Result.Descriptions := TDictionary<string, string>.Create;
+  try
+    for LP in SplitTopLevelCommas(LBody, ALineNo) do
+    begin
+      if LP = '' then Continue;
+      SplitKV(LP, ALineNo, LK, LV);
+      if LK = 'slug' then Result.Slug := LV
+      else if (LK = 'names') or (LK = 'descriptions') then
+      begin
+        if (LV = '') or (LV[1] <> '{') or (LV[Length(LV)] <> '}') then
+          RaiseAt(ALineNo, RS_ERR_INLINE_BRACES);
+        LInner := Trim(Copy(LV, 2, Length(LV) - 2));
+        if LK = 'names' then
+          ParseFlatInlineIntoUnquoting(LInner, ALineNo, Result.Names)
+        else
+          ParseFlatInlineIntoUnquoting(LInner, ALineNo, Result.Descriptions);
+      end
+      else
+        RaiseAt(ALineNo, Format(RS_ERR_UNKNOWN_SPELL_FIELD, [LK]));
+    end;
+  except
+    Result.Names.Free;
+    Result.Descriptions.Free;
+    raise;
+  end;
+end;
+
 function ParseBook(const ALines: TArray<TYamlLine>; var AIdx: Integer): TYamlBook;
 var
   LLine: TYamlLine;
   LKey, LValue: string;
   LStatList: TList<TYamlStat>;
+  LInvList: TList<TYamlStartingItem>;
+  LSpellList: TList<TYamlSpell>;
 begin
   Result.Slug := '';
   Result.Author := '';
   Result.Titles := TDictionary<string, string>.Create;
+  Result.StartingInventory := nil;
+  Result.Spells := nil;
   LStatList := TList<TYamlStat>.Create;
+  LInvList := TList<TYamlStartingItem>.Create;
+  LSpellList := TList<TYamlSpell>.Create;
   try
     // First line: '- key: value' at indent 0
     LLine := ALines[AIdx];
@@ -330,6 +472,32 @@ begin
           Inc(AIdx);
         end;
       end
+      else if LKey = 'starting_inventory' then
+      begin
+        if LValue <> '' then
+          RaiseAt(LLine.LineNo, RS_ERR_BAD_KV);
+        while (AIdx <= High(ALines)) and (ALines[AIdx].Indent = 4) do
+        begin
+          if not StartsText('- ', ALines[AIdx].Content) then
+            RaiseAt(ALines[AIdx].LineNo, RS_ERR_STARTING_ITEM_ITEM);
+          LInvList.Add(ParseStartingItemInline(
+            ALines[AIdx].Content, ALines[AIdx].LineNo));
+          Inc(AIdx);
+        end;
+      end
+      else if LKey = 'spells' then
+      begin
+        if LValue <> '' then
+          RaiseAt(LLine.LineNo, RS_ERR_BAD_KV);
+        while (AIdx <= High(ALines)) and (ALines[AIdx].Indent = 4) do
+        begin
+          if not StartsText('- ', ALines[AIdx].Content) then
+            RaiseAt(ALines[AIdx].LineNo, RS_ERR_SPELL_ITEM);
+          LSpellList.Add(ParseSpellInline(
+            ALines[AIdx].Content, ALines[AIdx].LineNo));
+          Inc(AIdx);
+        end;
+      end
       else
         RaiseAt(LLine.LineNo, Format(RS_ERR_UNKNOWN_FIELD, [LKey]));
     end;
@@ -338,8 +506,12 @@ begin
       RaiseAt(ALines[AIdx].LineNo, RS_ERR_UNEXPECTED_INDENT);
 
     Result.Stats := LStatList.ToArray;
+    Result.StartingInventory := LInvList.ToArray;
+    Result.Spells := LSpellList.ToArray;
   finally
     LStatList.Free;
+    LInvList.Free;
+    LSpellList.Free;
   end;
 end;
 
