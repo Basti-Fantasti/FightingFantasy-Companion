@@ -144,6 +144,10 @@ begin
     LCurrent := 0;
     for LStep in LSteps do
     begin
+      // Skip the synthetic setup step (kind='setup') — it has no section
+      // and exists only to anchor starting inventory and initial stats.
+      if LStep.Kind = 'setup' then
+        Continue;
       // FromSection = 0 means the row's from_section column was NULL, i.e.
       // the very first step of the adventure. It contributes the start node
       // but no incoming edge.

@@ -328,7 +328,7 @@ var
   LResp, LLocation, LGraphJson: string;
   LJson, LNode: TJsonObject;
   LNodes, LEdges: TJsonArray;
-  LLastStepId: Int64;
+  LLastStepId, LRevisitStepId: Int64;
   LFound42: Boolean;
   I: Integer;
   LRespCode: Integer;
@@ -371,12 +371,15 @@ begin
       LBody.Free;
     end;
 
-    // ---- 3. Log six steps; first step starts with last_step_id=0
-    LLastStepId := 0;
+    // ---- 3. Log six steps; first step starts from whatever last_step_id
+    //         the adventure page exposes (the setup step's id since Task 11
+    //         introduced a synthetic setup step at seq=1).
+    LLastStepId := ExtractHiddenInt(GetText('/adventures/1'), 'last_step_id');
     LogStep(1,   LLastStepId);  // step 1, from=NULL to=1
     LogStep(42,  LLastStepId);  // step 2, 1 -> 42
     LogStep(187, LLastStepId);  // step 3, 42 -> 187
     LogStep(42,  LLastStepId);  // step 4, 187 -> 42 (will be undone)
+    LRevisitStepId := LLastStepId;
     LogStep(87,  LLastStepId);  // step 5, 42 -> 87
     LogStep(200, LLastStepId);  // step 6, 87 -> 200
 
@@ -385,7 +388,7 @@ begin
     try
       // Empty form body — undo takes no form fields, but Indy requires a body.
       LBody.Add('');
-      LResp := LHttp.Post(FBaseUrl + '/adventures/1/steps/4/undo', LBody);
+      LResp := LHttp.Post(FBaseUrl + '/adventures/1/steps/' + IntToStr(LRevisitStepId) + '/undo', LBody);
       LRespCode := LHttp.ResponseCode;
       Assert.AreEqual(200, LRespCode,
         Format('Undo failed: status=%d, body=%s', [LRespCode, LResp]));
