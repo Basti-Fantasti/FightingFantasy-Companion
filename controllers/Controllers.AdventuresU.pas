@@ -77,6 +77,18 @@ type
     procedure PostCreate;
 
     /// <summary>
+    ///   HTMX fragment endpoint returning the book-specific form sections
+    ///   (stats, starting gear, spell picks) for the new-adventure form. The
+    ///   client requests this whenever the book select changes so the form
+    ///   reflects the selected book's stat defs, starting items, and spell
+    ///   defs without a full page reload.
+    /// </summary>
+    [MVCPath('/adventures/new/sections')]
+    [MVCHTTPMethod([httpGET])]
+    [MVCProduces(TMVCMediaType.TEXT_HTML)]
+    procedure GetNewSections;
+
+    /// <summary>
     ///   Play view for a single adventure. Verifies ownership before
     ///   rendering the panels + timeline / graph + step-form skeleton.
     /// </summary>
@@ -117,9 +129,12 @@ uses
   AppConfigU,
   Models.AdventureU, Models.BookU, Models.StepU,
   Models.DiceRollU,
+  Models.StatDefU, Models.StartingItemU, Models.SpellDefU,
   Repositories.AdventuresU, Repositories.BooksU, Repositories.StepsU,
   Repositories.DiceRollsU,
+  Repositories.SpellDefsU, Repositories.BookStartingItemsU,
   Services.AdventureStateU,
+  Services.AdventureCreateU,
   Services.LocalizedTitleU,
   Controllers.StepsU;
 
@@ -256,17 +271,53 @@ begin
   Render(RenderView('pages/adventures/new'));
 end;
 
-procedure TAdventuresController.PostCreate;
+/// <summary>
+///   Verifies the current user is allowed to start an adventure with ABookId
+///   (seed book or one of their own custom books). Returns True when the
+///   book id appears in TBooksRepo.ListBooksForUser for the current user.
+/// </summary>
+function TAdventuresController_UserOwnsBook(const AConn: string;
+  AUserId, ABookId: Int64): Boolean;
 var
-  LAdvRepo: TAdventuresRepo;
   LBookRepo: TBooksRepo;
-  LBookIdStr, LTitle: string;
-  LBookId, LNewId: Int64;
   LVisible: TArray<TBook>;
   LBook: TBook;
-  LOwned: Boolean;
+begin
+  Result := False;
+  LBookRepo := TBooksRepo.Create(AConn);
+  try
+    LVisible := LBookRepo.ListBooksForUser(AUserId);
+    for LBook in LVisible do
+      if LBook.Id = ABookId then
+      begin
+        Result := True;
+        Break;
+      end;
+  finally
+    LBookRepo.Free;
+  end;
+end;
+
+procedure TAdventuresController.PostCreate;
+var
+  LSvc: TAdventureCreateService;
+  LReq: TAdventureCreateRequest;
+  LBookRepo: TBooksRepo;
+  LSpellRepo: TSpellDefsRepo;
+  LItemsRepo: TBookStartingItemsRepo;
+  LStatDefs: TArray<TStatDef>;
+  LSpells: TArray<TSpellDef>;
+  LGearRows: TArray<TStartingItemRow>;
+  LGear: TStartingItemRow;
+  LIdx: Integer;
+  LNewId: Int64;
+  LLang: string;
+  LMagicStatDefId: Int64;
+  LBookIdStr, LTitle: string;
+  LBookId: Int64;
 begin
   RequireLogin;
+  LLang := ViewData['current_lang'].AsString;
 
   LBookIdStr := Trim(Context.Request.ContentParam('book_id'));
   LTitle     := Trim(Context.Request.ContentParam('title'));
@@ -285,36 +336,190 @@ begin
     Exit;
   end;
 
-  // Validate the book is one the current user is allowed to start an
-  // adventure with (seed or their own custom book).
-  LOwned := False;
-  LBookRepo := TBooksRepo.Create(CMainConnection);
-  try
-    LVisible := LBookRepo.ListBooksForUser(CurrentUserId);
-    for LBook in LVisible do
-      if LBook.Id = LBookId then
-      begin
-        LOwned := True;
-        Break;
-      end;
-  finally
-    LBookRepo.Free;
-  end;
-  if not LOwned then
+  if not TAdventuresController_UserOwnsBook(CMainConnection,
+    CurrentUserId, LBookId) then
   begin
     Context.Response.StatusCode := HTTP_STATUS.BadRequest;
     Render(SInvalidBook);
     Exit;
   end;
 
-  LAdvRepo := TAdventuresRepo.Create(CMainConnection);
+  // Gather book-specific definitions so we know which form fields to read
+  // and so we can default missing values back to the book defaults.
+  LBookRepo  := TBooksRepo.Create(CMainConnection);
+  LSpellRepo := TSpellDefsRepo.Create(CMainConnection);
+  LItemsRepo := TBookStartingItemsRepo.Create(CMainConnection);
   try
-    LNewId := LAdvRepo.Create(CurrentUserId, LBookId, LTitle);
+    LStatDefs := LBookRepo.GetStatDefs(LBookId);
+    LSpells   := LSpellRepo.ListByBook(LBookId);
+    LGearRows := LItemsRepo.ListByBookLocalized(LBookId, LLang);
   finally
-    LAdvRepo.Free;
+    LItemsRepo.Free;
+    LSpellRepo.Free;
+    LBookRepo.Free;
+  end;
+
+  LReq := Default(TAdventureCreateRequest);
+  LReq.UserId := CurrentUserId;
+  LReq.BookId := LBookId;
+  LReq.Title  := LTitle;
+  LReq.Lang   := LLang;
+
+  // Stats: one form field per stat def (stat_<id>). We also note the
+  // magic stat def id (case-insensitive name match) so the service can
+  // enforce the spell budget against it.
+  SetLength(LReq.StatValues, Length(LStatDefs));
+  LMagicStatDefId := 0;
+  for LIdx := 0 to High(LStatDefs) do
+  begin
+    LReq.StatValues[LIdx].StatDefId := LStatDefs[LIdx].Id;
+    LReq.StatValues[LIdx].Value :=
+      Trim(Context.Request.ContentParam(
+        'stat_' + IntToStr(LStatDefs[LIdx].Id)));
+    if SameText(LStatDefs[LIdx].Name, 'magic') then
+      LMagicStatDefId := LStatDefs[LIdx].Id;
+  end;
+
+  // Gear: per starting-item slug, three fields (keep flag, optional rename,
+  // quantity override). Missing name falls back to the localised default;
+  // missing quantity falls back to the book-defined quantity.
+  SetLength(LReq.GearRows, Length(LGearRows));
+  for LIdx := 0 to High(LGearRows) do
+  begin
+    LGear := LGearRows[LIdx];
+    LReq.GearRows[LIdx].Slug := LGear.Slug;
+    LReq.GearRows[LIdx].Keep :=
+      Context.Request.ContentParam('gear_keep_' + LGear.Slug) = '1';
+    LReq.GearRows[LIdx].Name :=
+      Trim(Context.Request.ContentParam('gear_name_' + LGear.Slug));
+    if LReq.GearRows[LIdx].Name = '' then
+      LReq.GearRows[LIdx].Name := LGear.DisplayName;
+    LReq.GearRows[LIdx].Quantity := StrToIntDef(
+      Context.Request.ContentParam('gear_qty_' + LGear.Slug),
+      LGear.Quantity);
+  end;
+
+  // Spells: only meaningful when the book actually has spell defs. The
+  // budget is anchored on the magic stat def id (0 when no magic stat).
+  if Length(LSpells) > 0 then
+    LReq.SpellBudgetStatDefId := LMagicStatDefId
+  else
+    LReq.SpellBudgetStatDefId := 0;
+  SetLength(LReq.SpellPicks, Length(LSpells));
+  for LIdx := 0 to High(LSpells) do
+  begin
+    LReq.SpellPicks[LIdx].SpellDefId := LSpells[LIdx].Id;
+    LReq.SpellPicks[LIdx].Count := StrToIntDef(
+      Context.Request.ContentParam(
+        'spell_count_' + IntToStr(LSpells[LIdx].Id)),
+      0);
+  end;
+
+  LSvc := TAdventureCreateService.Create(CMainConnection);
+  try
+    try
+      LNewId := LSvc.CreateAdventure(LReq);
+    except
+      on E: EAdventureCreateError do
+      begin
+        Context.Response.StatusCode := HTTP_STATUS.BadRequest;
+        Render(E.Message);
+        Exit;
+      end;
+    end;
+  finally
+    LSvc.Free;
   end;
 
   Redirect('/adventures/' + IntToStr(LNewId));
+end;
+
+procedure TAdventuresController.GetNewSections;
+var
+  LBookIdStr: string;
+  LBookId: Int64;
+  LBookRepo: TBooksRepo;
+  LSpellRepo: TSpellDefsRepo;
+  LItemsRepo: TBookStartingItemsRepo;
+  LStatDefs: TArray<TStatDef>;
+  LSpells: TArray<TSpellDef>;
+  LGearRows: TArray<TStartingItemRow>;
+  LStatsArr, LGearArr, LSpellsArr: TJsonArray;
+  LObj: TJsonObject;
+  LIdx: Integer;
+  LLang: string;
+begin
+  RequireLogin;
+  LLang := ViewData['current_lang'].AsString;
+
+  LBookIdStr := Context.Request.QueryStringParam('book_id');
+  LBookId := StrToInt64Def(LBookIdStr, 0);
+
+  // No book selected yet: render an empty fragment so the form clears.
+  if LBookId <= 0 then
+  begin
+    Render('');
+    Exit;
+  end;
+
+  if not TAdventuresController_UserOwnsBook(CMainConnection,
+    CurrentUserId, LBookId) then
+  begin
+    Context.Response.StatusCode := HTTP_STATUS.BadRequest;
+    Render(SInvalidBook);
+    Exit;
+  end;
+
+  LBookRepo  := TBooksRepo.Create(CMainConnection);
+  LSpellRepo := TSpellDefsRepo.Create(CMainConnection);
+  LItemsRepo := TBookStartingItemsRepo.Create(CMainConnection);
+  try
+    LStatDefs := LBookRepo.GetStatDefs(LBookId);
+    LSpells   := LSpellRepo.ListByBook(LBookId);
+    LGearRows := LItemsRepo.ListByBookLocalized(LBookId, LLang);
+  finally
+    LItemsRepo.Free;
+    LSpellRepo.Free;
+    LBookRepo.Free;
+  end;
+
+  LStatsArr  := TJsonArray.Create;
+  LGearArr   := TJsonArray.Create;
+  LSpellsArr := TJsonArray.Create;
+  // ViewData takes ownership of the arrays.
+
+  for LIdx := 0 to High(LStatDefs) do
+  begin
+    LObj := LStatsArr.AddObject;
+    LObj.L['id']   := LStatDefs[LIdx].Id;
+    LObj.S['name'] := LStatDefs[LIdx].Name;
+  end;
+
+  for LIdx := 0 to High(LGearRows) do
+  begin
+    LObj := LGearArr.AddObject;
+    LObj.S['slug']         := LGearRows[LIdx].Slug;
+    LObj.S['display_name'] := LGearRows[LIdx].DisplayName;
+    LObj.I['quantity']     := LGearRows[LIdx].Quantity;
+  end;
+
+  for LIdx := 0 to High(LSpells) do
+  begin
+    LObj := LSpellsArr.AddObject;
+    LObj.L['id']   := LSpells[LIdx].Id;
+    LObj.S['slug'] := LSpells[LIdx].Slug;
+  end;
+
+  ViewData['book_id'] := LBookIdStr;
+  ViewData['stats']   := LStatsArr;
+  ViewData['gear']    := LGearArr;
+  ViewData['spells']  := LSpellsArr;
+
+  // The real template lands in Task 13; render a minimal placeholder so the
+  // route exists end-to-end without crashing if the template file is absent.
+  Render('<div data-testid="new-sections-placeholder">' +
+    'Book-specific sections placeholder &mdash; implemented in Task 13' +
+    '</div>');
 end;
 
 procedure TAdventuresController.Play(Id: Int64);
