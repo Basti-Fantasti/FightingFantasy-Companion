@@ -99,6 +99,7 @@
         <DCCReference Include="controllers\Controllers.BaseU.pas"/>
         <DCCReference Include="repositories\Repositories.MigrationU.pas"/>
         <DCCReference Include="repositories\Repositories.SpellDefsU.pas"/>
+        <DCCReference Include="repositories\Repositories.BookStartingItemsU.pas"/>
         <DCCReference Include="repositories\Repositories.AdventureSpellsU.pas"/>
         <DCCReference Include="models\Models.UserU.pas"/>
         <DCCReference Include="models\Models.SessionU.pas"/>

@@ -101,6 +101,7 @@
         <DCCReference Include="..\models\Models.InventoryEventU.pas"/>
         <DCCReference Include="..\repositories\Repositories.InventoryEventsU.pas"/>
         <DCCReference Include="..\repositories\Repositories.SpellDefsU.pas"/>
+        <DCCReference Include="..\repositories\Repositories.BookStartingItemsU.pas"/>
         <DCCReference Include="..\repositories\Repositories.AdventureSpellsU.pas"/>
         <DCCReference Include="..\models\Models.AdventureSpellU.pas"/>
         <DCCReference Include="..\services\Services.AdventureStateU.pas"/>
@@ -115,6 +116,7 @@
         <DCCReference Include="Tests.Repositories.AdventuresU.pas"/>
         <DCCReference Include="Tests.Repositories.StepsU.pas"/>
         <DCCReference Include="Tests.Repositories.SpellDefsU.pas"/>
+        <DCCReference Include="Tests.Repositories.BookStartingItemsU.pas"/>
         <DCCReference Include="Tests.Repositories.AdventureSpellsU.pas"/>
         <DCCReference Include="Tests.Services.AdventureStateU.pas"/>
         <DCCReference Include="Tests.Services.AdventureStateU.Inventory.pas"/>
