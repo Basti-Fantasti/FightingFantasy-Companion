@@ -4,22 +4,22 @@
     <header class="modal-card-head"><p class="modal-card-title">{{:label}}</p></header>
     <section class="modal-card-body has-text-centered">
       <div class="buttons is-centered">
-        <button class="button is-large is-touch"
+        <button class="button is-large is-touch ff-numeric"
                 hx-post="{{:preview_url}}" hx-target="#modal-host"
                 hx-vals='{"item_name":"{{:item_name}}","original":"{{:original}}","working":"{{:working}}","delta":"-5","reason":"{{:reason}}"}'>&minus;5</button>
-        <button class="button is-large is-touch"
+        <button class="button is-large is-touch ff-numeric"
                 hx-post="{{:preview_url}}" hx-target="#modal-host"
                 hx-vals='{"item_name":"{{:item_name}}","original":"{{:original}}","working":"{{:working}}","delta":"-1","reason":"{{:reason}}"}'>&minus;1</button>
       </div>
-      <input class="input is-large has-text-centered" type="number" value="{{:working}}"
+      <input class="input is-large has-text-centered ff-numeric" type="number" inputmode="numeric" pattern="[0-9]*" value="{{:working}}"
              hx-post="{{:preview_url}}" hx-trigger="change" hx-target="#modal-host"
              hx-vals='{"item_name":"{{:item_name}}","original":"{{:original}}","delta":"0","reason":"{{:reason}}"}' name="working">
-      <p class="has-text-grey">(was {{:original}} &bull; &Delta; {{:delta_display}})</p>
+      <p class="has-text-grey is-size-7 ff-numeric">was {{:original}} &bull; Δ {{:delta_display}}</p>
       <div class="buttons is-centered">
-        <button class="button is-large is-touch"
+        <button class="button is-large is-touch ff-numeric"
                 hx-post="{{:preview_url}}" hx-target="#modal-host"
                 hx-vals='{"item_name":"{{:item_name}}","original":"{{:original}}","working":"{{:working}}","delta":"+1","reason":"{{:reason}}"}'>+1</button>
-        <button class="button is-large is-touch"
+        <button class="button is-large is-touch ff-numeric"
                 hx-post="{{:preview_url}}" hx-target="#modal-host"
                 hx-vals='{"item_name":"{{:item_name}}","original":"{{:original}}","working":"{{:working}}","delta":"+5","reason":"{{:reason}}"}'>+5</button>
       </div>
@@ -29,7 +29,7 @@
       </div>
     </section>
     <footer class="modal-card-foot">
-      <button class="button" onclick="document.dispatchEvent(new CustomEvent('close-modal'))">{{:l10n.btn_cancel}}</button>
+      <button class="button is-light" onclick="document.dispatchEvent(new CustomEvent('close-modal'))">{{:l10n.btn_cancel}}</button>
       <form hx-post="{{:commit_url}}" hx-target="#inventory-panel" hx-swap="outerHTML">
         <input type="hidden" name="kind" value="modify">
         <input type="hidden" name="item_name" value="{{:item_name}}">

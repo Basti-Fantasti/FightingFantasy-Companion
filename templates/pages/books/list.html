@@ -5,7 +5,7 @@
 <div class="buttons">
   <a class="button is-primary" href="/books/new">+ {{:l10n.book_new_title}}</a>
 </div>
-<table class="table is-fullwidth is-striped">
+<table class="table is-fullwidth">
   <thead>
     <tr>
       <th>{{:l10n.book_title_label}}</th>
@@ -18,7 +18,7 @@
     <tr>
       <td>{{:book.title}}</td>
       <td>{{:book.author}}</td>
-      <td>{{if book.custom}}custom{{else}}seed{{endif}}</td>
+      <td>{{if book.custom}}<span class="tag">custom</span>{{else}}<span class="tag is-light">seed</span>{{endif}}</td>
     </tr>
   {{endfor}}
   </tbody>

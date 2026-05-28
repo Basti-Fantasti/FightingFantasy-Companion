@@ -1,21 +1,21 @@
 <div id="timeline-area">
   {{for step in steps}}
     <div class="box {{if step.undone}}is-undone{{endif}}">
-      <span class="tag">#{{:step.seq}}</span>
+      <span class="tag ff-numeric">#{{:step.seq}}</span>
       {{if step.is_setup}}
         <span class="tag is-light">{{:l10n.timeline_setup_chip}}</span>
         {{for it in step.setup_items}}<span class="tag is-info is-light ml-1">{{:it.name}}</span>{{endfor}}
       {{else}}
-        {{if step.from_section}}&sect;{{:step.from_section}} &rarr; {{endif}}&sect;{{:step.to_section}}
+        <span class="ff-step-section ff-numeric">{{if step.from_section}}§{{:step.from_section}}<span class="ff-arrow">→</span>{{endif}}§{{:step.to_section}}</span>
       {{endif}}
-      {{if step.note}} &mdash; {{:step.note}}{{endif}}
-      {{if step.flag_fight}}<span class="tag is-danger">{{:l10n.step_flag_fight}}</span>{{endif}}
-      {{if step.flag_item}}<span class="tag is-info">{{:l10n.step_flag_item}}</span>{{endif}}
-      {{if step.flag_stat}}<span class="tag is-warning">{{:l10n.step_flag_stat}}</span>{{endif}}
+      {{if step.note}} <span class="has-text-grey">— {{:step.note}}</span>{{endif}}
+      {{if step.flag_fight}}<span class="tag is-danger ml-1">{{:l10n.step_flag_fight}}</span>{{endif}}
+      {{if step.flag_item}}<span class="tag is-info ml-1">{{:l10n.step_flag_item}}</span>{{endif}}
+      {{if step.flag_stat}}<span class="tag is-warning ml-1">{{:l10n.step_flag_stat}}</span>{{endif}}
       {{if step.has_spells_cast}}
         {{for sp in step.spells_cast}}<span class="tag is-warning is-light ml-1">{{:sp.display_name}}</span>{{endfor}}
       {{endif}}
-      <span class="is-pulled-right">{{:step.created_at_display}}</span>
+      <span class="is-pulled-right ff-step-time">{{:step.created_at_display}}</span>
       <div class="mt-2">
         {{if step.undone}}
           <form hx-post="/adventures/{{:adventure.id}}/steps/{{:step.id}}/redo" hx-target="#timeline-area" hx-swap="outerHTML">

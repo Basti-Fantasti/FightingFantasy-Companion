@@ -1,18 +1,20 @@
-<div id="stats-panel" class="box">
-  <h3 class="subtitle is-5">{{:l10n.stat_panel_title}}</h3>
+<div id="stats-panel" class="box ff-charsheet">
+  <h3 class="ff-section-head">{{:l10n.stat_panel_title}}</h3>
   {{for stat in stats}}
-  <div class="level">
-    <div class="level-left"><strong>{{:stat.display_name}}</strong></div>
-    <div class="level-right">
+  <div class="ff-stat-row">
+    <div>
+      <span class="ff-stat-name">{{:stat.display_name}}</span>
+      {{if stat.is_integer}}<br><span class="ff-stat-start">start {{:stat.start_value}}</span>{{endif}}
+    </div>
+    <div>
       {{if stat.is_integer}}
-      <button class="button is-large is-touch"
+      <button class="button is-touch ff-stat-btn ff-numeric"
               hx-get="/adventures/{{:adventure.id}}/stats/{{:stat.stat_def_id}}/modal"
               hx-target="#modal-host" hx-swap="innerHTML">
         {{:stat.value}}
       </button>
-      <span class="has-text-grey is-size-7 ml-2">(start {{:stat.start_value}})</span>
       {{else}}
-      <span>{{:stat.value}}</span>
+      <span class="ff-numeric">{{:stat.value}}</span>
       {{endif}}
     </div>
   </div>
