@@ -117,6 +117,16 @@ type
     /// </summary>
     function GetSpellSnapshot(AAdventureId: Int64;
       const ALang: string): TArray<TAdventureSpellGroup>;
+
+    /// <summary>
+    ///   Returns the display names of spells consumed at each step in the
+    ///   adventure, keyed by step id. Only steps with at least one cast appear
+    ///   in the dictionary. Display names are localised to ALang with fallback
+    ///   to any other seeded language and finally to the spell slug.
+    ///   Callers must Free the returned dictionary.
+    /// </summary>
+    function GetSpellCastsByStep(AAdventureId: Int64;
+      const ALang: string): TDictionary<Int64, TArray<string>>;
   end;
 
 implementation
@@ -342,6 +352,53 @@ begin
       LGroup.Available   := LQ.FieldByName('avail').AsInteger;
       LGroup.Consumed    := LQ.FieldByName('cons').AsInteger;
       Result := Result + [LGroup];
+      LQ.Next;
+    end;
+  finally
+    LQ.Free;
+    LC.Free;
+  end;
+end;
+
+function TAdventureStateService.GetSpellCastsByStep(AAdventureId: Int64;
+  const ALang: string): TDictionary<Int64, TArray<string>>;
+var
+  LC: TFDConnection;
+  LQ: TFDQuery;
+  LStepId: Int64;
+  LName: string;
+  LExisting: TArray<string>;
+begin
+  Result := TDictionary<Int64, TArray<string>>.Create;
+  LC := TFDConnection.Create(nil);
+  LQ := TFDQuery.Create(nil);
+  try
+    LC.ConnectionDefName := FConn;
+    LC.Open;
+    LQ.Connection := LC;
+    LQ.Open(
+      'SELECT a.consumed_step_id AS step_id, ' +
+      '       COALESCE(t1.display_name, t2.display_name, sd.slug) AS name ' +
+      'FROM adventure_spells a ' +
+      'JOIN spell_defs sd ON sd.id = a.spell_def_id ' +
+      'LEFT JOIN spell_def_titles t1 ' +
+      '  ON t1.spell_def_id = sd.id AND t1.lang = :lang ' +
+      'LEFT JOIN spell_def_titles t2 ' +
+      '  ON t2.spell_def_id = sd.id ' +
+      '  AND t2.lang = (SELECT lang FROM spell_def_titles ' +
+      '                 WHERE spell_def_id = sd.id ORDER BY lang LIMIT 1) ' +
+      'WHERE a.adventure_id = :a ' +
+      '  AND a.consumed_step_id IS NOT NULL ' +
+      'ORDER BY a.consumed_step_id, a.ord',
+      [ALang, AAdventureId]);
+    while not LQ.Eof do
+    begin
+      LStepId := LQ.FieldByName('step_id').AsLargeInt;
+      LName   := LQ.FieldByName('name').AsString;
+      if Result.TryGetValue(LStepId, LExisting) then
+        Result[LStepId] := LExisting + [LName]
+      else
+        Result.Add(LStepId, TArray<string>.Create(LName));
       LQ.Next;
     end;
   finally

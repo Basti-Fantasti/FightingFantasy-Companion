@@ -134,6 +134,8 @@ uses
   Repositories.AdventuresU, Repositories.BooksU, Repositories.StepsU,
   Repositories.DiceRollsU,
   Repositories.SpellDefsU, Repositories.BookStartingItemsU,
+  Repositories.InventoryEventsU,
+  Models.InventoryEventU,
   Services.AdventureStateU,
   Services.AdventureCreateU,
   Services.LocalizedTitleU,
@@ -600,6 +602,9 @@ var
   LSpellAvailArr, LSpellConsumedArr: TJsonArray;
   LSpellObj: TJsonObject;
   LSpellConsumedAny: Boolean;
+  LInvEventsRepo: TInventoryEventsRepo;
+  LInvEvents: TArray<TInventoryEvent>;
+  LSpellCasts: TDictionary<Int64, TArray<string>>;
 begin
   RequireLogin;
   LCurrentLang := ViewData['current_lang'].AsString;
@@ -677,6 +682,9 @@ begin
     // boolean flags (count_gt_one, spells_available_none, spells_consumed_any)
     // keep the template free of negation and comparison operators.
     LSpellSnapshot := LStateSvc.GetSpellSnapshot(LAdv.Id, LCurrentLang);
+    // Spell casts keyed by step id; consumed by BuildStepsArray to decorate
+    // timeline chips with the spells cast at each step.
+    LSpellCasts := LStateSvc.GetSpellCastsByStep(LAdv.Id, LCurrentLang);
   finally
     LStateSvc.Free;
   end;
@@ -713,6 +721,16 @@ begin
     LStepsRepo.Free;
   end;
 
+  // Inventory events drive the setup chip's item sub-chips; pull every event
+  // (including undone) so undone setup rows still display their gear with the
+  // greyed-out box styling.
+  LInvEventsRepo := TInventoryEventsRepo.Create(CMainConnection);
+  try
+    LInvEvents := LInvEventsRepo.ListByAdventure(LAdv.Id, True);
+  finally
+    LInvEventsRepo.Free;
+  end;
+
   LAdvObj := TJsonObject.Create;
   LAdvObj.L['id']           := LAdv.Id;
   LAdvObj.S['title']        := LAdv.Title;
@@ -720,7 +738,11 @@ begin
   LAdvObj.L['book_id']      := LAdv.BookId;
   LAdvObj.L['last_step_id'] := LAdv.LastStepId;
 
-  LStepsArr := BuildStepsArray(LStepList);
+  try
+    LStepsArr := BuildStepsArray(LStepList, LInvEvents, LSpellCasts);
+  finally
+    LSpellCasts.Free;
+  end;
 
   // Dice history: surface the most recent roll for the "Last: ..." highlight
   // and up to 3 entries for the short history list. When the player hasn't
@@ -808,9 +830,14 @@ procedure TAdventuresController.Timeline(Id: Int64);
 var
   LAdvRepo: TAdventuresRepo;
   LStepsRepo: TStepsRepo;
+  LInvEventsRepo: TInventoryEventsRepo;
+  LStateSvc: TAdventureStateService;
   LAdv: TAdventure;
   LAdvObj: TJsonObject;
   LStepList: TArray<TStep>;
+  LInvEvents: TArray<TInventoryEvent>;
+  LSpellCasts: TDictionary<Int64, TArray<string>>;
+  LCurrentLang: string;
 begin
   RequireLogin;
 
@@ -832,11 +859,29 @@ begin
     LAdvRepo.Free;
   end;
 
+  LCurrentLang := ViewData['current_lang'].AsString;
+
   LStepsRepo := TStepsRepo.Create(CMainConnection);
   try
     LStepList := LStepsRepo.ListByAdventure(Id, True);
   finally
     LStepsRepo.Free;
+  end;
+
+  // Match Play: pull inventory events and spell casts so chip enrichment
+  // survives across HTMX refreshes after a step is logged.
+  LInvEventsRepo := TInventoryEventsRepo.Create(CMainConnection);
+  try
+    LInvEvents := LInvEventsRepo.ListByAdventure(Id, True);
+  finally
+    LInvEventsRepo.Free;
+  end;
+
+  LStateSvc := TAdventureStateService.Create(CMainConnection);
+  try
+    LSpellCasts := LStateSvc.GetSpellCastsByStep(Id, LCurrentLang);
+  finally
+    LStateSvc.Free;
   end;
 
   LAdvObj := TJsonObject.Create;
@@ -847,7 +892,11 @@ begin
   LAdvObj.L['last_step_id'] := LAdv.LastStepId;
 
   ViewData['adventure'] := LAdvObj;
-  ViewData['steps']     := BuildStepsArray(LStepList);
+  try
+    ViewData['steps'] := BuildStepsArray(LStepList, LInvEvents, LSpellCasts);
+  finally
+    LSpellCasts.Free;
+  end;
 
   // Fragment-only response — the partial doesn't extend a layout, so we
   // skip the base wrapper entirely.
