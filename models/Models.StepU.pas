@@ -50,6 +50,9 @@ type
     FlagStat: Boolean;
     /// <summary>Soft-delete flag for undo; True hides the step from the timeline.</summary>
     Undone: Boolean;
+    /// <summary>'normal' for player-recorded steps, 'setup' for the synthetic
+    /// adventure-start step that carries starting inventory.</summary>
+    Kind: string;
     /// <summary>Timestamp captured when the step was inserted.</summary>
     CreatedAt: TDateTime;
   end;

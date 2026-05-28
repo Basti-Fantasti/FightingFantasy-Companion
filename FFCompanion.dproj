@@ -1,26 +1,25 @@
-<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
         <ProjectGuid>{8F2A9C1B-3D4E-4F50-9B11-7A0C3E5F9D21}</ProjectGuid>
-        <ProjectVersion>20.2</ProjectVersion>
+        <ProjectVersion>20.3</ProjectVersion>
         <FrameworkType>VCL</FrameworkType>
         <Base>True</Base>
-        <Config Condition="'$(Config)'==''">Debug</Config>
-        <Platform Condition="'$(Platform)'==''">Win64</Platform>
-        <TargetedPlatforms>1048578</TargetedPlatforms>
+        <Config Condition="'$(Config)'==''">Release</Config>
+        <Platform Condition="'$(Platform)'==''">Linux64</Platform>
+        <TargetedPlatforms>130</TargetedPlatforms>
         <AppType>Console</AppType>
         <MainSource>FFCompanion.dpr</MainSource>
-        <ProjectName Condition="'$(ProjectName)'==''">FFCompanion</ProjectName>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
         <Base>true</Base>
     </PropertyGroup>
-    <PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Base)'=='true') or '$(Base_Win64)'!=''">
-        <Base_Win64>true</Base_Win64>
+    <PropertyGroup Condition="('$(Platform)'=='Linux64' and '$(Base)'=='true') or '$(Base_Linux64)'!=''">
+        <Base_Linux64>true</Base_Linux64>
         <CfgParent>Base</CfgParent>
         <Base>true</Base>
     </PropertyGroup>
-    <PropertyGroup Condition="('$(Platform)'=='Linux64' and '$(Base)'=='true') or '$(Base_Linux64)'!=''">
-        <Base_Linux64>true</Base_Linux64>
+    <PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Base)'=='true') or '$(Base_Win64)'!=''">
+        <Base_Win64>true</Base_Win64>
         <CfgParent>Base</CfgParent>
         <Base>true</Base>
     </PropertyGroup>
@@ -31,12 +30,6 @@
     </PropertyGroup>
     <PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Cfg_1)'=='true') or '$(Cfg_1_Win64)'!=''">
         <Cfg_1_Win64>true</Cfg_1_Win64>
-        <CfgParent>Cfg_1</CfgParent>
-        <Cfg_1>true</Cfg_1>
-        <Base>true</Base>
-    </PropertyGroup>
-    <PropertyGroup Condition="('$(Platform)'=='Linux64' and '$(Cfg_1)'=='true') or '$(Cfg_1_Linux64)'!=''">
-        <Cfg_1_Linux64>true</Cfg_1_Linux64>
         <CfgParent>Cfg_1</CfgParent>
         <Cfg_1>true</Cfg_1>
         <Base>true</Base>
@@ -61,11 +54,11 @@
         <VerInfo_Locale>1031</VerInfo_Locale>
         <VerInfo_Keys>CompanyName=;FileDescription=$(MSBuildProjectName);FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
     </PropertyGroup>
-    <PropertyGroup Condition="'$(Base_Win64)'!=''">
-        <DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;$(DCC_Namespace)</DCC_Namespace>
+    <PropertyGroup Condition="'$(Base_Linux64)'!=''">
         <BT_BuildType>Debug</BT_BuildType>
     </PropertyGroup>
-    <PropertyGroup Condition="'$(Base_Linux64)'!=''">
+    <PropertyGroup Condition="'$(Base_Win64)'!=''">
+        <DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;$(DCC_Namespace)</DCC_Namespace>
         <BT_BuildType>Debug</BT_BuildType>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1)'!=''">
@@ -97,38 +90,9 @@
         </DCCReference>
         <DCCReference Include="config\AppConfigU.pas"/>
         <DCCReference Include="controllers\Controllers.BaseU.pas"/>
-        <DCCReference Include="repositories\Repositories.MigrationU.pas"/>
-        <DCCReference Include="models\Models.UserU.pas"/>
-        <DCCReference Include="models\Models.SessionU.pas"/>
-        <DCCReference Include="repositories\Repositories.UsersU.pas"/>
-        <DCCReference Include="repositories\Repositories.SessionsU.pas"/>
-        <DCCReference Include="services\Services.AuthU.pas"/>
-        <DCCReference Include="models\Models.BookU.pas"/>
-        <DCCReference Include="models\Models.StatDefU.pas"/>
-        <DCCReference Include="repositories\Repositories.BooksU.pas"/>
-        <DCCReference Include="services\Services.LocalizedTitleU.pas"/>
-        <DCCReference Include="services\Services.YamlReaderU.pas"/>
-        <DCCReference Include="services\Services.BookCatalogU.pas"/>
-        <DCCReference Include="models\Models.AdventureU.pas"/>
-        <DCCReference Include="repositories\Repositories.AdventuresU.pas"/>
-        <DCCReference Include="models\Models.StepU.pas"/>
-        <DCCReference Include="repositories\Repositories.StepsU.pas"/>
-        <DCCReference Include="models\Models.StatChangeU.pas"/>
-        <DCCReference Include="repositories\Repositories.StatChangesU.pas"/>
-        <DCCReference Include="models\Models.InventoryEventU.pas"/>
-        <DCCReference Include="repositories\Repositories.InventoryEventsU.pas"/>
-        <DCCReference Include="services\Services.AdventureStateU.pas"/>
-        <DCCReference Include="controllers\Controllers.AuthU.pas"/>
-        <DCCReference Include="controllers\Controllers.BooksU.pas"/>
-        <DCCReference Include="controllers\Controllers.AdventuresU.pas"/>
-        <DCCReference Include="controllers\Controllers.StepsU.pas"/>
-        <DCCReference Include="controllers\Controllers.StatsU.pas"/>
-        <DCCReference Include="controllers\Controllers.InventoryU.pas"/>
-        <DCCReference Include="models\Models.DiceRollU.pas"/>
-        <DCCReference Include="repositories\Repositories.DiceRollsU.pas"/>
-        <DCCReference Include="controllers\Controllers.DiceU.pas"/>
-        <DCCReference Include="services\Services.GraphBuilderU.pas"/>
-        <DCCReference Include="controllers\Controllers.GraphU.pas"/>
+        <DCCReference Include="models\Models.SpellDefU.pas"/>
+        <DCCReference Include="models\Models.AdventureSpellU.pas"/>
+        <DCCReference Include="models\Models.StartingItemU.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
@@ -151,9 +115,9 @@
                 </Source>
             </Delphi.Personality>
             <Platforms>
+                <Platform value="Linux64">True</Platform>
                 <Platform value="Win32">False</Platform>
                 <Platform value="Win64">True</Platform>
-                <Platform value="Linux64">True</Platform>
             </Platforms>
         </BorlandProject>
         <ProjectFileVersion>12</ProjectFileVersion>

@@ -92,6 +92,9 @@
         <DCCReference Include="..\models\Models.AdventureU.pas"/>
         <DCCReference Include="..\repositories\Repositories.AdventuresU.pas"/>
         <DCCReference Include="..\models\Models.StepU.pas"/>
+        <DCCReference Include="..\models\Models.SpellDefU.pas"/>
+        <DCCReference Include="..\models\Models.AdventureSpellU.pas"/>
+        <DCCReference Include="..\models\Models.StartingItemU.pas"/>
         <DCCReference Include="..\repositories\Repositories.StepsU.pas"/>
         <DCCReference Include="..\models\Models.StatChangeU.pas"/>
         <DCCReference Include="..\repositories\Repositories.StatChangesU.pas"/>
