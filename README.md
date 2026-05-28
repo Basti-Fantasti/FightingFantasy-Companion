@@ -1,7 +1,7 @@
 # Fighting Fantasy Companion
 
 A record-keeping companion for solo play of *Fighting Fantasy* gamebooks. The
-app does **not** contain gamebook text and does **not** automate combat — it
+app does **not** contain gamebook text and does **not** automate combat - it
 keeps an honest log of your playthrough so you can focus on the book and still
 have a complete record of where you went, what you carried, and how your stats
 evolved.
@@ -15,33 +15,33 @@ UI is available in **German** (default) and **English**.
 
 ## Features
 
-- **Decision-path tracking** — every section visited, every jump made, every
+- **Decision-path tracking** - every section visited, every jump made, every
   revisit. The full chronological trail of your adventure, never just the
   current page.
-- **Per-book configurable stats** — Skill, Stamina and Luck are standard, but
+- **Per-book configurable stats** - Skill, Stamina and Luck are standard, but
   each book defines its own set. *Sorcery!*-style titles get an extra *Magic*
   stat; you can also define **custom books** with arbitrary stat fields from
   the UI.
-- **Inventory management** — pick up, drop, consume and use items as you go;
+- **Inventory management** - pick up, drop, consume and use items as you go;
   starting inventory is seeded from the book definition.
-- **Spells / abilities** — for spell-using books, casting a spell is recorded
+- **Spells / abilities** - for spell-using books, casting a spell is recorded
   and consumption is reverted on undo.
-- **Soft-undo** — step back a move; stat changes, inventory pickups and spell
+- **Soft-undo** - step back a move; stat changes, inventory pickups and spell
   uses are rolled back together.
-- **Timeline view** — chronological list of every section, jump and event.
-- **Interactive graph view** — a Cytoscape.js graph of the sections you
+- **Timeline view** - chronological list of every section, jump and event.
+- **Interactive graph view** - a Cytoscape.js graph of the sections you
   visited and the jumps between them. Revisits, branches and dead ends are
   visible at a glance.
-- **Dice roller** — built-in d6 / 2d6 roller for stat checks and combat.
-- **Multi-adventure** — keep several runs in parallel; switch between them
+- **Dice roller** - built-in d6 / 2d6 roller for stat checks and combat.
+- **Multi-adventure** - keep several runs in parallel; switch between them
   freely.
-- **Multi-user** — sign up with just username + password (no email). Each
+- **Multi-user** - sign up with just username + password (no email). Each
   user's adventures are isolated.
-- **Parchment / ink theme** — touch-friendly UI tuned for tablets next to an
+- **Parchment / ink theme** - touch-friendly UI tuned for tablets next to an
   open book.
-- **Localized** — full German and English interfaces, including localized
+- **Localized** - full German and English interfaces, including localized
   stat names, item names and spell descriptions per book.
-- **Seeded catalog** — *The Citadel of Chaos*, *The Warlock of Firetop
+- **Seeded catalog** - *The Citadel of Chaos*, *The Warlock of Firetop
   Mountain* and *Deathtrap Dungeon* ship out of the box.
 
 ## Quick start (deployment)
@@ -82,17 +82,17 @@ mapping in `docker-compose.yaml` (e.g. `"9000:8080"`).
 ### Adding more books
 
 The seeded catalog covers three titles. **PRs to add further Fighting
-Fantasy books are very welcome** — they'll ship in the next release. Add an
+Fantasy books are very welcome** - they'll ship in the next release. Add an
 entry to [`data/books_seed.yaml`](data/books_seed.yaml) following the
 existing pattern (slug, English/German titles, per-book stats, starting
-inventory, and — for spell-using titles — the spell list with localized
+inventory, and - for spell-using titles - the spell list with localized
 names and descriptions), then open a pull request.
 
 ### Translations
 
 UI strings live in [`l10n/de.json`](l10n/de.json) and
-[`l10n/en.json`](l10n/en.json). If you'd like to see another UI language —
-or you spot a wording that could be improved — please **open a pull request**
+[`l10n/en.json`](l10n/en.json). If you'd like to see another UI language,
+or you spot a wording that could be improved, please **open a pull request**
 with the new catalog, or **open a GitHub issue** describing what's missing
 and we'll coordinate from there.
 
