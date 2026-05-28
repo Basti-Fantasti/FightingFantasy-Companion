@@ -83,7 +83,7 @@ begin
 end;
 
 const
-  SQL_SCHEMA: array[0..9] of string = (
+  SQL_SCHEMA: array[0..14] of string = (
     'CREATE TABLE IF NOT EXISTS users (' +
       'id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
       'username TEXT NOT NULL UNIQUE, ' +
@@ -138,7 +138,8 @@ const
       'adventure_id INTEGER NOT NULL REFERENCES adventures(id) ON DELETE CASCADE, ' +
       'seq INTEGER NOT NULL, ' +
       'from_section INTEGER, ' +
-      'to_section INTEGER NOT NULL, ' +
+      'to_section INTEGER, ' +
+      'kind TEXT NOT NULL DEFAULT ''normal'' CHECK(kind IN (''normal'',''setup'')), ' +
       'note TEXT, ' +
       'flag_fight INTEGER NOT NULL DEFAULT 0, ' +
       'flag_item INTEGER NOT NULL DEFAULT 0, ' +
@@ -161,17 +162,57 @@ const
       'kind TEXT NOT NULL CHECK(kind IN (''gain'',''lose'',''modify'')), ' +
       'item_name TEXT NOT NULL, ' +
       'quantity INTEGER NOT NULL DEFAULT 1, ' +
-      'note TEXT)'
+      'note TEXT)',
+
+    'CREATE TABLE IF NOT EXISTS spell_defs (' +
+      'id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+      'book_id INTEGER NOT NULL REFERENCES books(id) ON DELETE CASCADE, ' +
+      'slug TEXT NOT NULL, ' +
+      'ord INTEGER NOT NULL, ' +
+      'UNIQUE(book_id, slug))',
+
+    'CREATE TABLE IF NOT EXISTS spell_def_titles (' +
+      'spell_def_id INTEGER NOT NULL REFERENCES spell_defs(id) ON DELETE CASCADE, ' +
+      'lang TEXT NOT NULL, ' +
+      'display_name TEXT NOT NULL, ' +
+      'description TEXT NOT NULL DEFAULT '''', ' +
+      'PRIMARY KEY (spell_def_id, lang))',
+
+    'CREATE TABLE IF NOT EXISTS adventure_spells (' +
+      'id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+      'adventure_id INTEGER NOT NULL REFERENCES adventures(id) ON DELETE CASCADE, ' +
+      'spell_def_id INTEGER NOT NULL REFERENCES spell_defs(id), ' +
+      'ord INTEGER NOT NULL, ' +
+      'consumed_at TEXT, ' +
+      'consumed_step_id INTEGER REFERENCES steps(id))',
+
+    'CREATE TABLE IF NOT EXISTS book_starting_items (' +
+      'id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+      'book_id INTEGER NOT NULL REFERENCES books(id) ON DELETE CASCADE, ' +
+      'slug TEXT NOT NULL, ' +
+      'ord INTEGER NOT NULL, ' +
+      'quantity INTEGER NOT NULL DEFAULT 1, ' +
+      'UNIQUE(book_id, slug))',
+
+    'CREATE TABLE IF NOT EXISTS book_starting_item_titles (' +
+      'starting_item_id INTEGER NOT NULL REFERENCES book_starting_items(id) ON DELETE CASCADE, ' +
+      'lang TEXT NOT NULL, ' +
+      'display_name TEXT NOT NULL, ' +
+      'PRIMARY KEY (starting_item_id, lang))'
   );
 
-  SQL_INDICES: array[0..6] of string = (
+  SQL_INDICES: array[0..10] of string = (
     'CREATE INDEX IF NOT EXISTS idx_steps_adv_seq ON steps(adventure_id, seq)',
     'CREATE INDEX IF NOT EXISTS idx_stat_changes_step ON stat_changes(step_id)',
     'CREATE INDEX IF NOT EXISTS idx_inv_events_step ON inventory_events(step_id)',
     'CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token)',
     'CREATE INDEX IF NOT EXISTS idx_adventures_user_status ON adventures(user_id, status)',
     'CREATE INDEX IF NOT EXISTS idx_book_titles ON book_titles(book_id, lang)',
-    'CREATE INDEX IF NOT EXISTS idx_stat_def_titles ON stat_def_titles(stat_def_id, lang)'
+    'CREATE INDEX IF NOT EXISTS idx_stat_def_titles ON stat_def_titles(stat_def_id, lang)',
+    'CREATE INDEX IF NOT EXISTS idx_adventure_spells_avail ON adventure_spells(adventure_id, consumed_at)',
+    'CREATE INDEX IF NOT EXISTS idx_adventure_spells_step  ON adventure_spells(consumed_step_id)',
+    'CREATE INDEX IF NOT EXISTS idx_book_starting_items    ON book_starting_items(book_id, ord)',
+    'CREATE INDEX IF NOT EXISTS idx_book_starting_item_titles ON book_starting_item_titles(starting_item_id, lang)'
   );
 
   // 11th table held separately so the SQL_SCHEMA array stays balanced.
