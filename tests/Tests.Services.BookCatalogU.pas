@@ -35,6 +35,7 @@ type
     [Test] procedure LoadingSeedTwiceIsIdempotent;
     [Test] procedure RemovingTitleFromYamlDeletesItOnReload;
     [Test] procedure BookMissingFromYamlNotDeleted;
+    [Test] procedure LoadSeed_PopulatesSpellsAndStartingItems;
   end;
 
 implementation
@@ -42,7 +43,10 @@ implementation
 uses
   System.SysUtils, System.IOUtils, System.Classes,
   FireDAC.Comp.Client,
-  Services.BookCatalogU, TestHelpers.DbU;
+  Services.BookCatalogU, TestHelpers.DbU,
+  Repositories.BooksU, Repositories.SpellDefsU,
+  Repositories.BookStartingItemsU,
+  Models.SpellDefU, Models.StartingItemU;
 
 const
   FIXTURE_CITADEL_FULL =
@@ -238,6 +242,65 @@ begin
     if TFile.Exists(LPath2) then
       TFile.Delete(LPath2);
     TDbHelper.Drop(LDb);
+  end;
+end;
+
+procedure TBookCatalogServiceTests.LoadSeed_PopulatesSpellsAndStartingItems;
+const
+  CYaml =
+    '- slug: citadel'#10 +
+    '  author: SJ'#10 +
+    '  titles:'#10 +
+    '    en: Citadel'#10 +
+    '  stats:'#10 +
+    '    - { name: magic, kind: integer, default: 0, titles: { en: Magic } }'#10 +
+    '  starting_inventory:'#10 +
+    '    - { slug: sword, titles: { de: Schwert, en: Sword } }'#10 +
+    '  spells:'#10 +
+    '    - { slug: strength, names: { de: Stärke, en: Strength }, descriptions: { de: "Erhöht Skill.", en: "Raises Skill." } }'#10;
+var
+  LConn, LPath: string;
+  LSvc: TBookCatalogService;
+  LBooks: TBooksRepo;
+  LSpells: TSpellDefsRepo;
+  LItems: TBookStartingItemsRepo;
+  LBookId: Int64;
+  LSpellList: TArray<TSpellDef>;
+  LSpellTitles: TArray<TSpellDefTitle>;
+  LItemRows: TArray<TStartingItemRow>;
+begin
+  LConn := TDbHelper.NewMemoryDb;
+  LPath := TPath.Combine(TPath.GetTempPath, 'seed_'+IntToStr(Random(1000000))+'.yaml');
+  try
+    TFile.WriteAllText(LPath, CYaml, TEncoding.UTF8);
+    LSvc := TBookCatalogService.Create(LConn);
+    try
+      LSvc.LoadSeed(LPath);
+      LSvc.LoadSeed(LPath); // idempotent
+    finally
+      LSvc.Free;
+    end;
+
+    LBooks := TBooksRepo.Create(LConn);
+    LSpells := TSpellDefsRepo.Create(LConn);
+    LItems := TBookStartingItemsRepo.Create(LConn);
+    try
+      LBookId := LBooks.FindIdBySlug('citadel');
+      Assert.IsTrue(LBookId > 0);
+      LSpellList := LSpells.ListByBook(LBookId);
+      Assert.AreEqual<Integer>(1, Length(LSpellList));
+      Assert.AreEqual('strength', LSpellList[0].Slug);
+      LSpellTitles := LSpells.ListTitles(LSpellList[0].Id);
+      Assert.AreEqual<Integer>(2, Length(LSpellTitles));
+      LItemRows := LItems.ListByBookLocalized(LBookId, 'de');
+      Assert.AreEqual<Integer>(1, Length(LItemRows));
+      Assert.AreEqual('Schwert', LItemRows[0].DisplayName);
+    finally
+      LItems.Free; LSpells.Free; LBooks.Free;
+    end;
+  finally
+    if TFile.Exists(LPath) then TFile.Delete(LPath);
+    TDbHelper.Drop(LConn);
   end;
 end;
 

@@ -48,10 +48,12 @@ unit Controllers.StepsU;
 interface
 
 uses
+  System.Generics.Collections,
   MVCFramework, MVCFramework.Commons,
   JsonDataObjects,
   Controllers.BaseU,
-  Models.StepU;
+  Models.StepU,
+  Models.InventoryEventU;
 
 /// <summary>
 ///   Builds the view-model JSON array consumed by partials/_timeline.html
@@ -61,7 +63,21 @@ uses
 ///   The caller owns the returned array (assign to ViewData to transfer
 ///   ownership to the request lifetime).
 /// </summary>
-function BuildStepsArray(const ASteps: TArray<TStep>): TJsonArray;
+function BuildStepsArray(const ASteps: TArray<TStep>): TJsonArray; overload;
+
+/// <summary>
+///   Extended variant of BuildStepsArray that decorates each step object with
+///   timeline-chip enrichment data: an is_setup flag derived from
+///   TStep.Kind = 'setup', a setup_items array populated only on the setup
+///   step from AInventoryEvents (filtered to kind='gain' for that step's id),
+///   and a spells_cast array (plus has_spells_cast flag) sourced from
+///   ASpellCastsByStep keyed on step id. AInventoryEvents and
+///   ASpellCastsByStep may be empty; pass them when the caller has already
+///   fetched them. The caller keeps ownership of ASpellCastsByStep.
+/// </summary>
+function BuildStepsArray(const ASteps: TArray<TStep>;
+  const AInventoryEvents: TArray<TInventoryEvent>;
+  ASpellCastsByStep: TDictionary<Int64, TArray<string>>): TJsonArray; overload;
 
 type
   /// <summary>
@@ -127,7 +143,9 @@ uses
   Models.AdventureU,
   Repositories.AdventuresU,
   Repositories.StepsU,
-  Services.AdventureStateU;
+  Repositories.InventoryEventsU,
+  Services.AdventureStateU,
+  Services.SpellU;
 
 const
   CMainConnection = 'FFMain';
@@ -140,10 +158,23 @@ resourcestring
   SStepGone      = 'Step not found.';
 
 function BuildStepsArray(const ASteps: TArray<TStep>): TJsonArray;
+begin
+  Result := BuildStepsArray(ASteps, nil, nil);
+end;
+
+function BuildStepsArray(const ASteps: TArray<TStep>;
+  const AInventoryEvents: TArray<TInventoryEvent>;
+  ASpellCastsByStep: TDictionary<Int64, TArray<string>>): TJsonArray;
 var
   LStep: TStep;
   LObj: TJsonObject;
   LDisplay: string;
+  LIsSetup: Boolean;
+  LSetupArr, LSpellsArr: TJsonArray;
+  LItemObj, LSpellObj: TJsonObject;
+  LEvent: TInventoryEvent;
+  LCasts: TArray<string>;
+  LName: string;
 begin
   Result := TJsonArray.Create;
   for LStep in ASteps do
@@ -163,6 +194,32 @@ begin
     else
       LDisplay := FormatDateTime(CDisplayDateFmt, LStep.CreatedAt);
     LObj.S['created_at_display'] := LDisplay;
+
+    // Setup chip enrichment: pre-resolve is_setup so the template can switch
+    // chip rendering without TemplatePro string comparisons. Setup items are
+    // the gain events on the setup step, in insertion order.
+    LIsSetup := SameText(LStep.Kind, 'setup');
+    LObj.B['is_setup'] := LIsSetup;
+    LSetupArr := LObj.A['setup_items'];
+    if LIsSetup then
+      for LEvent in AInventoryEvents do
+        if (LEvent.StepId = LStep.Id) and SameText(LEvent.Kind, 'gain') then
+        begin
+          LItemObj := LSetupArr.AddObject;
+          LItemObj.S['name'] := LEvent.ItemName;
+        end;
+
+    // Spell sub-chips: precomputed has_spells_cast keeps the template's
+    // {{if}} block trivial since TemplatePro can't measure array length.
+    LSpellsArr := LObj.A['spells_cast'];
+    if (ASpellCastsByStep <> nil) and
+       ASpellCastsByStep.TryGetValue(LStep.Id, LCasts) then
+      for LName in LCasts do
+      begin
+        LSpellObj := LSpellsArr.AddObject;
+        LSpellObj.S['display_name'] := LName;
+      end;
+    LObj.B['has_spells_cast'] := LSpellsArr.Count > 0;
   end;
 end;
 
@@ -303,10 +360,16 @@ procedure TStepsController.SetStepUndoneAndRespond(AAdvId, ASId: Int64;
 var
   LAdvRepo: TAdventuresRepo;
   LStepsRepo: TStepsRepo;
+  LInvEventsRepo: TInventoryEventsRepo;
+  LStateSvc: TAdventureStateService;
+  LSpellSvc: TSpellService;
   LAdv: TAdventure;
   LStep: TStep;
   LList: TArray<TStep>;
+  LInvEvents: TArray<TInventoryEvent>;
+  LSpellCasts: TDictionary<Int64, TArray<string>>;
   LRespondedNotFound: Boolean;
+  LCurrentLang: string;
 begin
   RequireLogin;
   LRespondedNotFound := False;
@@ -352,13 +415,47 @@ begin
 
     LStepsRepo.SetUndone(ASId, AUndone);
 
+    // Revert any spell consumption attributed to this step when undoing.
+    // Redo intentionally does NOT auto-re-consume: the user re-casts manually.
+    if AUndone then
+    begin
+      LSpellSvc := TSpellService.Create(CMainConnection);
+      try
+        LSpellSvc.UndoForStep(ASId);
+      finally
+        LSpellSvc.Free;
+      end;
+    end;
+
     LList := LStepsRepo.ListByAdventure(AAdvId, True);
   finally
     LStepsRepo.Free;
   end;
 
+  LCurrentLang := ViewData['current_lang'].AsString;
+
+  // Mirror Play/Timeline enrichment so undo/redo also re-render the setup
+  // chip and spell sub-chips with the same data shape.
+  LInvEventsRepo := TInventoryEventsRepo.Create(CMainConnection);
+  try
+    LInvEvents := LInvEventsRepo.ListByAdventure(AAdvId, True);
+  finally
+    LInvEventsRepo.Free;
+  end;
+
+  LStateSvc := TAdventureStateService.Create(CMainConnection);
+  try
+    LSpellCasts := LStateSvc.GetSpellCastsByStep(AAdvId, LCurrentLang);
+  finally
+    LStateSvc.Free;
+  end;
+
   ViewData['adventure'] := BuildAdventureObj(LAdv);
-  ViewData['steps']     := BuildStepsArray(LList);
+  try
+    ViewData['steps'] := BuildStepsArray(LList, LInvEvents, LSpellCasts);
+  finally
+    LSpellCasts.Free;
+  end;
 
   Context.Response.SetCustomHeader('HX-Trigger', CTriggerGraphOnly);
 

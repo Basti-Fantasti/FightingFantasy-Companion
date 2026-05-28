@@ -83,6 +83,13 @@ type
     ///   section 42 visits=1).
     /// </summary>
     [Test] procedure FullPlaythroughProducesExpectedGraph;
+    /// <summary>
+    ///   Drives signup + adventure creation + one real section step + spell
+    ///   cast over HTTP, then undoes the section step over HTTP and verifies
+    ///   that the consumed spell is restored (available count goes back up,
+    ///   consumed count returns to zero).
+    /// </summary>
+    [Test] procedure UndoStep_RevivesCastSpells;
   end;
 
 implementation
@@ -97,7 +104,13 @@ uses
   JsonDataObjects,
   FireDAC.Stan.Intf, FireDAC.Comp.Client, FireDAC.Stan.Def,
   MVCFramework.SQLGenerators.Sqlite,
-  WebModuleU;
+  WebModuleU,
+  AppConfigU,
+  Repositories.MigrationU,
+  Services.BookCatalogU,
+  Repositories.BooksU, Repositories.SpellDefsU,
+  Repositories.AdventureSpellsU,
+  Models.SpellDefU, Models.AdventureSpellU;
 
 const
   CTestPort = 18900;
@@ -129,8 +142,10 @@ begin
     LDstDir := ExtractFilePath(LDstFile);
     if not TDirectory.Exists(LDstDir) then
       TDirectory.CreateDirectory(LDstDir);
-    if not TFile.Exists(LDstFile) then
-      TFile.Copy(LFile, LDstFile, False);
+    // Always overwrite: a stale copy of a tracked asset (e.g. books_seed.yaml
+    // missing newly added spells) silently breaks tests that depend on the
+    // fresh content. The copy is cheap and only runs once per process.
+    TFile.Copy(LFile, LDstFile, True);
   end;
 end;
 
@@ -188,9 +203,23 @@ begin
   FServer := nil;
 end;
 
+procedure EnsureFreshFFMainDef(const ADbPath: string);
+var
+  LDef: IFDStanConnectionDef;
+begin
+  LDef := FDManager.ConnectionDefs.FindConnectionDef(CConnName);
+  if LDef <> nil then
+  begin
+    try FDManager.CloseConnectionDef(CConnName); except end;
+    try LDef.Delete; except end;
+  end;
+  TMigrationRunner.CreateFileConnection(ADbPath);
+end;
+
 procedure TPlaythroughE2ETests.SetUp;
 var
   LGuid: TGUID;
+  LCatalog: TBookCatalogService;
 begin
   FPrevCurrentDir := GetCurrentDir;
   PrepareAssets;
@@ -209,6 +238,22 @@ begin
 
   StartServer(CTestPort);
   FBaseUrl := Format('http://127.0.0.1:%d', [CTestPort]);
+
+  // WebModuleCreate registers the FFMain conn def + runs migrations + loads
+  // seeds lazily on first request, but the Indy bridge reuses a cached
+  // TWebModule across tests in this fixture, skipping re-registration after
+  // TearDown wipes the def. Also CreateFileConnection is a no-op when a def
+  // already exists, so we must ensure no stale def points at the previous
+  // test's (now-deleted) db file. Recreate everything here so each test
+  // sees a fresh def + schema + seeded book catalogue.
+  EnsureFreshFFMainDef(FDbPath);
+  TMigrationRunner.RunOnConnection(CConnName);
+  LCatalog := TBookCatalogService.Create(CConnName);
+  try
+    LCatalog.LoadSeed(TAppConfig.SeedYamlPath);
+  finally
+    LCatalog.Free;
+  end;
 end;
 
 procedure TPlaythroughE2ETests.TearDown;
@@ -328,7 +373,7 @@ var
   LResp, LLocation, LGraphJson: string;
   LJson, LNode: TJsonObject;
   LNodes, LEdges: TJsonArray;
-  LLastStepId: Int64;
+  LLastStepId, LRevisitStepId: Int64;
   LFound42: Boolean;
   I: Integer;
   LRespCode: Integer;
@@ -371,12 +416,15 @@ begin
       LBody.Free;
     end;
 
-    // ---- 3. Log six steps; first step starts with last_step_id=0
-    LLastStepId := 0;
+    // ---- 3. Log six steps; first step starts from whatever last_step_id
+    //         the adventure page exposes (the setup step's id since Task 11
+    //         introduced a synthetic setup step at seq=1).
+    LLastStepId := ExtractHiddenInt(GetText('/adventures/1'), 'last_step_id');
     LogStep(1,   LLastStepId);  // step 1, from=NULL to=1
     LogStep(42,  LLastStepId);  // step 2, 1 -> 42
     LogStep(187, LLastStepId);  // step 3, 42 -> 187
     LogStep(42,  LLastStepId);  // step 4, 187 -> 42 (will be undone)
+    LRevisitStepId := LLastStepId;
     LogStep(87,  LLastStepId);  // step 5, 42 -> 87
     LogStep(200, LLastStepId);  // step 6, 87 -> 200
 
@@ -385,7 +433,7 @@ begin
     try
       // Empty form body — undo takes no form fields, but Indy requires a body.
       LBody.Add('');
-      LResp := LHttp.Post(FBaseUrl + '/adventures/1/steps/4/undo', LBody);
+      LResp := LHttp.Post(FBaseUrl + '/adventures/1/steps/' + IntToStr(LRevisitStepId) + '/undo', LBody);
       LRespCode := LHttp.ResponseCode;
       Assert.AreEqual(200, LRespCode,
         Format('Undo failed: status=%d, body=%s', [LRespCode, LResp]));
@@ -426,6 +474,176 @@ begin
       Assert.IsTrue(LFound42, 'Node for section 42 missing from graph');
     finally
       LJson.Free;
+    end;
+  finally
+    LHttp.Free;
+  end;
+end;
+
+procedure TPlaythroughE2ETests.UndoStep_RevivesCastSpells;
+var
+  LHttp: TIdHTTP;
+  LCookies: TIdCookieManager;
+  LBody: TStringList;
+  LResp, LLocation: string;
+  LRespCode: Integer;
+  LLastStepId, LSectionStepId, LStrengthSpellDefId: Int64;
+  LSpellDefs: TArray<TSpellDef>;
+  LSpells: TSpellDefsRepo;
+  LAS: TAdventureSpellsRepo;
+  LGroups: TArray<TAdventureSpellGroup>;
+  LDef: TSpellDef;
+  LGroup: TAdventureSpellGroup;
+  LAvailable, LConsumed: Integer;
+  I: Integer;
+begin
+  LHttp := TIdHTTP.Create(nil);
+  LCookies := TIdCookieManager.Create(LHttp);
+  try
+    LHttp.CookieManager := LCookies;
+    LHttp.AllowCookies := True;
+    LHttp.HandleRedirects := False;
+    LHttp.HTTPOptions := LHttp.HTTPOptions +
+      [hoNoProtocolErrorException, hoWantProtocolErrorContent];
+
+    // ---- 1. Signup
+    LBody := TStringList.Create;
+    try
+      LBody.Add('username=bob');
+      LBody.Add('password=secret123');
+      LResp := LHttp.Post(FBaseUrl + '/signup', LBody);
+      LRespCode := LHttp.ResponseCode;
+      Assert.IsTrue((LRespCode = 302) or (LRespCode = 303) or
+        (LRespCode = 200),
+        Format('Unexpected /signup status %d, body=%s', [LRespCode, LResp]));
+    finally
+      LBody.Free;
+    end;
+
+    // ---- 2. Create adventure (no spell_count_* fields => no spells yet)
+    LBody := TStringList.Create;
+    try
+      LBody.Add('book_id=1');
+      LBody.Add('title=Spell Undo Test');
+      LResp := LHttp.Post(FBaseUrl + '/adventures', LBody);
+      LRespCode := LHttp.ResponseCode;
+      Assert.IsTrue((LRespCode = 302) or (LRespCode = 303),
+        Format('Expected redirect from /adventures, got %d, body=%s',
+          [LRespCode, LResp]));
+      LLocation := LHttp.Response.Location;
+      Assert.AreEqual('/adventures/1', LLocation,
+        'Expected redirect to /adventures/1');
+    finally
+      LBody.Free;
+    end;
+
+    // ---- 3. Inject two strength spell instances directly via the in-process
+    //         DB. Going through the create form would require parsing dynamic
+    //         spell_count_<id> fields; the goal here is to test undo, not
+    //         the form. The FFMain conn def was created lazily by the first
+    //         request above.
+    LSpells := TSpellDefsRepo.Create(CConnName);
+    LAS := TAdventureSpellsRepo.Create(CConnName);
+    try
+      LSpellDefs := LSpells.ListByBook(1);
+      LStrengthSpellDefId := 0;
+      for LDef in LSpellDefs do
+        if LDef.Slug = 'strength' then
+          LStrengthSpellDefId := LDef.Id;
+      Assert.IsTrue(LStrengthSpellDefId > 0,
+        'Expected strength spell def to be seeded for book 1');
+      LAS.Insert(1, LStrengthSpellDefId, 0);
+      LAS.Insert(1, LStrengthSpellDefId, 1);
+    finally
+      LAS.Free;
+      LSpells.Free;
+    end;
+
+    // ---- 4. Log a real section step so spell casting is allowed.
+    LResp := LHttp.Get(FBaseUrl + '/adventures/1');
+    LLastStepId := ExtractHiddenInt(LResp, 'last_step_id');
+    Assert.IsTrue(LLastStepId > 0,
+      'Setup step id missing from /adventures/1');
+    LBody := TStringList.Create;
+    try
+      LBody.Add('last_step_id=' + IntToStr(LLastStepId));
+      LBody.Add('to_section=10');
+      LBody.Add('note=');
+      LResp := LHttp.Post(FBaseUrl + '/adventures/1/steps', LBody);
+      Assert.AreEqual(200, LHttp.ResponseCode,
+        Format('Step log failed: %d body=%s', [LHttp.ResponseCode, LResp]));
+      LSectionStepId := ExtractHiddenInt(LResp, 'last_step_id');
+      Assert.IsTrue(LSectionStepId > LLastStepId,
+        'Section step id did not advance');
+    finally
+      LBody.Free;
+    end;
+
+    // ---- 5. Cast strength via HTTP.
+    LBody := TStringList.Create;
+    try
+      LBody.Add('spell_def_id=' + IntToStr(LStrengthSpellDefId));
+      LResp := LHttp.Post(FBaseUrl + '/adventures/1/spells/cast', LBody);
+      Assert.AreEqual(200, LHttp.ResponseCode,
+        Format('Cast failed: %d body=%s', [LHttp.ResponseCode, LResp]));
+    finally
+      LBody.Free;
+    end;
+
+    // Sanity check: one consumed, one still available.
+    LAS := TAdventureSpellsRepo.Create(CConnName);
+    try
+      LGroups := LAS.ListGroups(1);
+      LAvailable := 0;
+      LConsumed := 0;
+      for I := 0 to High(LGroups) do
+      begin
+        LGroup := LGroups[I];
+        if LGroup.SpellDefId = LStrengthSpellDefId then
+        begin
+          LAvailable := LGroup.Available;
+          LConsumed := LGroup.Consumed;
+        end;
+      end;
+      Assert.AreEqual(1, LAvailable, 'Expected 1 strength available after cast');
+      Assert.AreEqual(1, LConsumed, 'Expected 1 strength consumed after cast');
+    finally
+      LAS.Free;
+    end;
+
+    // ---- 6. Undo the section step over HTTP.
+    LBody := TStringList.Create;
+    try
+      LBody.Add('');
+      LResp := LHttp.Post(FBaseUrl + '/adventures/1/steps/' +
+        IntToStr(LSectionStepId) + '/undo', LBody);
+      Assert.AreEqual(200, LHttp.ResponseCode,
+        Format('Undo failed: %d body=%s', [LHttp.ResponseCode, LResp]));
+    finally
+      LBody.Free;
+    end;
+
+    // ---- 7. Verify the spell was revived.
+    LAS := TAdventureSpellsRepo.Create(CConnName);
+    try
+      LGroups := LAS.ListGroups(1);
+      LAvailable := 0;
+      LConsumed := 0;
+      for I := 0 to High(LGroups) do
+      begin
+        LGroup := LGroups[I];
+        if LGroup.SpellDefId = LStrengthSpellDefId then
+        begin
+          LAvailable := LGroup.Available;
+          LConsumed := LGroup.Consumed;
+        end;
+      end;
+      Assert.AreEqual(2, LAvailable,
+        'Undo should restore strength availability to 2');
+      Assert.AreEqual(0, LConsumed,
+        'Undo should clear strength consumption');
+    finally
+      LAS.Free;
     end;
   finally
     LHttp.Free;

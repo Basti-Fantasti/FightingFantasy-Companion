@@ -39,7 +39,8 @@ unit Services.AdventureStateU;
 interface
 
 uses
-  System.Generics.Collections;
+  System.Generics.Collections,
+  Models.AdventureSpellU;
 
 type
   /// <summary>
@@ -54,6 +55,10 @@ type
     Kind: string;
     /// <summary>Current value as a string, ready for rendering.</summary>
     Value: string;
+    /// <summary>Starting (default) value from the stat definition, unchanged
+    ///   by replayed stat_changes. Useful for showing the player how far the
+    ///   current value has drifted from character creation.</summary>
+    StartValue: string;
   end;
 
   /// <summary>
@@ -106,6 +111,26 @@ type
     ///   Callers must Free the returned list.
     /// </summary>
     function GetCurrentInventory(AAdventureId: Int64): TList<TInventoryItem>;
+
+    /// <summary>
+    ///   Returns one TAdventureSpellGroup per distinct spell_def used in the
+    ///   adventure, with available/consumed counts and a localised display
+    ///   name resolved for ALang. Falls back to any other seeded language when
+    ///   ALang has no entry, and to the spell's slug when no titles exist.
+    ///   Result is ordered by spell_defs.ord ASC.
+    /// </summary>
+    function GetSpellSnapshot(AAdventureId: Int64;
+      const ALang: string): TArray<TAdventureSpellGroup>;
+
+    /// <summary>
+    ///   Returns the display names of spells consumed at each step in the
+    ///   adventure, keyed by step id. Only steps with at least one cast appear
+    ///   in the dictionary. Display names are localised to ALang with fallback
+    ///   to any other seeded language and finally to the spell slug.
+    ///   Callers must Free the returned dictionary.
+    /// </summary>
+    function GetSpellCastsByStep(AAdventureId: Int64;
+      const ALang: string): TDictionary<Int64, TArray<string>>;
   end;
 
 implementation
@@ -119,6 +144,8 @@ uses
   Repositories.AdventuresU, Repositories.BooksU,
   Repositories.StatChangesU,
   Repositories.InventoryEventsU,
+  Repositories.SpellDefsU, Repositories.AdventureSpellsU,
+  Models.SpellDefU,
   Services.LocalizedTitleU;
 
 constructor TAdventureStateService.Create(const AConnectionName: string);
@@ -175,6 +202,7 @@ var
   LChange: TStatChange;
   LSnapshot: TStatSnapshot;
   LValues: TDictionary<Int64, string>;
+  LStartValues: TDictionary<Int64, string>;
 begin
   Result := TList<TStatSnapshot>.Create;
   LAdvRepo := TAdventuresRepo.Create(FConn);
@@ -188,18 +216,24 @@ begin
   LBooksRepo := TBooksRepo.Create(FConn);
   LChangesRepo := TStatChangesRepo.Create(FConn);
   LValues := TDictionary<Int64, string>.Create;
+  LStartValues := TDictionary<Int64, string>.Create;
   try
     LDefs := LBooksRepo.GetStatDefs(LAdv.BookId);
-    // Seed every stat with its default value.
     for LDef in LDefs do
       LValues.AddOrSetValue(LDef.Id, LDef.DefaultValue);
 
     // Replay every non-undone change in chronological (seq, id) order so the
-    // last write wins per stat_def_id.
+    // last write wins per stat_def_id. The first change seen per stat is the
+    // adventure's starting value (entered on the setup step); FF stat_defs
+    // seed default_value=0 because real starting values are rolled per run.
     LChanges := LChangesRepo.ListByAdventure(AAdventureId, False);
     for LChange in LChanges do
       if LValues.ContainsKey(LChange.StatDefId) then
+      begin
+        if not LStartValues.ContainsKey(LChange.StatDefId) then
+          LStartValues.Add(LChange.StatDefId, LChange.NewValue);
         LValues[LChange.StatDefId] := LChange.NewValue;
+      end;
 
     // Build snapshots in stat-def order with localised display names.
     for LDef in LDefs do
@@ -217,9 +251,12 @@ begin
       end;
       LSnapshot.Kind  := LDef.Kind;
       LSnapshot.Value := LValues[LDef.Id];
+      if not LStartValues.TryGetValue(LDef.Id, LSnapshot.StartValue) then
+        LSnapshot.StartValue := LDef.DefaultValue;
       Result.Add(LSnapshot);
     end;
   finally
+    LStartValues.Free;
     LValues.Free;
     LChangesRepo.Free;
     LBooksRepo.Free;
@@ -285,6 +322,102 @@ begin
     LQuantities.Free;
     LOrder.Free;
     LRepo.Free;
+  end;
+end;
+
+function TAdventureStateService.GetSpellSnapshot(AAdventureId: Int64;
+  const ALang: string): TArray<TAdventureSpellGroup>;
+var
+  LC: TFDConnection;
+  LQ: TFDQuery;
+  LGroup: TAdventureSpellGroup;
+begin
+  Result := nil;
+  LC := TFDConnection.Create(nil);
+  LQ := TFDQuery.Create(nil);
+  try
+    LC.ConnectionDefName := FConn;
+    LC.Open;
+    LQ.Connection := LC;
+    LQ.Open(
+      'SELECT sd.id, sd.slug, sd.ord, ' +
+      '       COALESCE(t1.display_name, t2.display_name, sd.slug) AS name, ' +
+      '       COALESCE(t1.description,  t2.description,  '''')     AS descr, ' +
+      '       SUM(CASE WHEN a.consumed_at IS NULL THEN 1 ELSE 0 END) AS avail, ' +
+      '       SUM(CASE WHEN a.consumed_at IS NULL THEN 0 ELSE 1 END) AS cons ' +
+      'FROM adventure_spells a ' +
+      'JOIN spell_defs sd ON sd.id = a.spell_def_id ' +
+      'LEFT JOIN spell_def_titles t1 ' +
+      '  ON t1.spell_def_id = sd.id AND t1.lang = :lang ' +
+      'LEFT JOIN spell_def_titles t2 ' +
+      '  ON t2.spell_def_id = sd.id ' +
+      '  AND t2.lang = (SELECT lang FROM spell_def_titles ' +
+      '                 WHERE spell_def_id = sd.id ORDER BY lang LIMIT 1) ' +
+      'WHERE a.adventure_id = :a ' +
+      'GROUP BY sd.id, sd.slug, sd.ord, name, descr ' +
+      'ORDER BY sd.ord ASC',
+      [ALang, AAdventureId]);
+    while not LQ.Eof do
+    begin
+      LGroup.SpellDefId  := LQ.FieldByName('id').AsLargeInt;
+      LGroup.Slug        := LQ.FieldByName('slug').AsString;
+      LGroup.DisplayName := LQ.FieldByName('name').AsString;
+      LGroup.Description := LQ.FieldByName('descr').AsString;
+      LGroup.Available   := LQ.FieldByName('avail').AsInteger;
+      LGroup.Consumed    := LQ.FieldByName('cons').AsInteger;
+      Result := Result + [LGroup];
+      LQ.Next;
+    end;
+  finally
+    LQ.Free;
+    LC.Free;
+  end;
+end;
+
+function TAdventureStateService.GetSpellCastsByStep(AAdventureId: Int64;
+  const ALang: string): TDictionary<Int64, TArray<string>>;
+var
+  LC: TFDConnection;
+  LQ: TFDQuery;
+  LStepId: Int64;
+  LName: string;
+  LExisting: TArray<string>;
+begin
+  Result := TDictionary<Int64, TArray<string>>.Create;
+  LC := TFDConnection.Create(nil);
+  LQ := TFDQuery.Create(nil);
+  try
+    LC.ConnectionDefName := FConn;
+    LC.Open;
+    LQ.Connection := LC;
+    LQ.Open(
+      'SELECT a.consumed_step_id AS step_id, ' +
+      '       COALESCE(t1.display_name, t2.display_name, sd.slug) AS name ' +
+      'FROM adventure_spells a ' +
+      'JOIN spell_defs sd ON sd.id = a.spell_def_id ' +
+      'LEFT JOIN spell_def_titles t1 ' +
+      '  ON t1.spell_def_id = sd.id AND t1.lang = :lang ' +
+      'LEFT JOIN spell_def_titles t2 ' +
+      '  ON t2.spell_def_id = sd.id ' +
+      '  AND t2.lang = (SELECT lang FROM spell_def_titles ' +
+      '                 WHERE spell_def_id = sd.id ORDER BY lang LIMIT 1) ' +
+      'WHERE a.adventure_id = :a ' +
+      '  AND a.consumed_step_id IS NOT NULL ' +
+      'ORDER BY a.consumed_step_id, a.ord',
+      [ALang, AAdventureId]);
+    while not LQ.Eof do
+    begin
+      LStepId := LQ.FieldByName('step_id').AsLargeInt;
+      LName   := LQ.FieldByName('name').AsString;
+      if Result.TryGetValue(LStepId, LExisting) then
+        Result[LStepId] := LExisting + [LName]
+      else
+        Result.Add(LStepId, TArray<string>.Create(LName));
+      LQ.Next;
+    end;
+  finally
+    LQ.Free;
+    LC.Free;
   end;
 end;
 

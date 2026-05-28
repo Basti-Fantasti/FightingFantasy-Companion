@@ -8,7 +8,9 @@ document.body.addEventListener('showFlash', (e) => {
   setTimeout(() => node.remove(), 5000);
 });
 
-document.body.addEventListener('close-modal', () => {
+// Listen on `document`, not `document.body`: inline cancel/background handlers
+// dispatch on `document`, and htmx HX-Trigger events fired on `body` bubble up.
+document.addEventListener('close-modal', () => {
   document.querySelectorAll('.modal.is-active').forEach(m => m.classList.remove('is-active'));
 });
 

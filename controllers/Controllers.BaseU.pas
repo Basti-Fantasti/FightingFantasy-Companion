@@ -59,9 +59,11 @@ type
     procedure Flash(const AType, AMessage: string);
 
     /// <summary>
-    ///   Aborts the request with HTTP 401 when no user is bound to the
-    ///   session. Issues an HX-Redirect for HTMX requests, otherwise a
-    ///   plain Location header pointing at /login.
+    ///   Aborts the request when no user is bound to the session. For HTMX
+    ///   requests, raises 401 with an HX-Redirect header pointing at /login
+    ///   (HTMX honours HX-Redirect on any status). For regular browser
+    ///   requests, issues a 302 redirect to /login, since browsers do not
+    ///   follow Location headers on 401 responses.
     /// </summary>
     procedure RequireLogin;
 
@@ -178,10 +180,12 @@ begin
   if FCurrentUserId = 0 then
   begin
     if IsHTMXRequest then
-      Context.Response.HXSetRedirect('/login')
+    begin
+      Context.Response.HXSetRedirect('/login');
+      raise EMVCException.Create(HTTP_STATUS.Unauthorized, SNotAuthenticated);
+    end
     else
-      Context.Response.SetCustomHeader('Location', '/login');
-    raise EMVCException.Create(HTTP_STATUS.Unauthorized, SNotAuthenticated);
+      Redirect('/login');
   end;
 end;
 

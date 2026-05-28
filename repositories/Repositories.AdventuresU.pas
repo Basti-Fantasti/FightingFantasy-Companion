@@ -79,6 +79,11 @@ type
 
     /// <summary>Sets the last_step_id column of a single adventure row.</summary>
     procedure UpdateLastStep(AId, ALastStepId: Int64);
+
+    /// <summary>Alias for UpdateLastStep; matches the service-layer naming
+    /// convention used by callers that prefer SetXxx for property-like
+    /// setters.</summary>
+    procedure SetLastStepId(AId, ALastStepId: Int64);
   end;
 
 implementation
@@ -252,6 +257,11 @@ begin
   finally
     LC.Free;
   end;
+end;
+
+procedure TAdventuresRepo.SetLastStepId(AId, ALastStepId: Int64);
+begin
+  UpdateLastStep(AId, ALastStepId);
 end;
 
 end.

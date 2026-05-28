@@ -67,7 +67,8 @@ uses
   Controllers.StatsU,
   Controllers.InventoryU,
   Controllers.DiceU,
-  Controllers.GraphU;
+  Controllers.GraphU,
+  Controllers.SpellsU;
 
 procedure TFFWebModule.WebModuleCreate(Sender: TObject);
 var
@@ -114,6 +115,7 @@ begin
   FMVC.AddController(TInventoryController);
   FMVC.AddController(TDiceController);
   FMVC.AddController(TGraphController);
+  FMVC.AddController(TSpellsController);
 end;
 
 procedure TFFWebModule.WebModuleDestroy(Sender: TObject);

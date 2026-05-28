@@ -52,6 +52,12 @@ type
     /// <summary>Replaces all localised display names for the stat def.</summary>
     procedure SetStatDefTitles(AStatDefId: Int64;
       const ATitles: TArray<TStatDefTitle>);
+    /// <summary>
+    ///   Returns the id of the book with the given slug, or 0 when no such
+    ///   row exists. Used by the seed loader and tests to look up freshly
+    ///   upserted catalogue books by their stable identifier.
+    /// </summary>
+    function FindIdBySlug(const ASlug: string): Int64;
     /// <summary>Returns seed books plus the user's own custom books.</summary>
     function ListBooksForUser(AUserId: Int64): TArray<TBook>;
     /// <summary>Loads a single book row by id.</summary>
@@ -195,6 +201,25 @@ begin
       raise;
     end;
   finally LC.Free; end;
+end;
+
+function TBooksRepo.FindIdBySlug(const ASlug: string): Int64;
+var
+  LC: TFDConnection;
+  LQ: TFDQuery;
+begin
+  Result := 0;
+  LC := NewConn(FConn);
+  LQ := TFDQuery.Create(nil);
+  try
+    LQ.Connection := LC;
+    LQ.Open('SELECT id FROM books WHERE slug=:s', [ASlug]);
+    if not LQ.Eof then
+      Result := LQ.FieldByName('id').AsLargeInt;
+  finally
+    LQ.Free;
+    LC.Free;
+  end;
 end;
 
 function TBooksRepo.ListBooksForUser(AUserId: Int64): TArray<TBook>;

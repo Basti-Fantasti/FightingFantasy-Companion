@@ -37,6 +37,8 @@ type
     [Test] procedure SetUndoneFlipsFlag;
     [Test] procedure ListIncludeUndoneVsExcludeUndone;
     [Test] procedure FirstStepHasNullFromSection;
+    [Test] procedure InsertSetup_CreatesKindSetupStepWithNullToSection;
+    [Test] procedure NormalInsert_StillProducesKindNormal;
   end;
 
 implementation
@@ -46,6 +48,7 @@ uses
   FireDAC.Comp.Client,
   Models.StepU,
   Repositories.UsersU,
+  Repositories.BooksU,
   Repositories.AdventuresU,
   Repositories.StepsU,
   TestHelpers.DbU;
@@ -198,6 +201,77 @@ begin
   finally
     LSteps.Free;
     TDbHelper.Drop(LDb);
+  end;
+end;
+
+procedure TStepsRepoTests.InsertSetup_CreatesKindSetupStepWithNullToSection;
+var
+  LConn: string;
+  LBooks: TBooksRepo; LUsers: TUsersRepo; LAdv: TAdventuresRepo;
+  LSteps: TStepsRepo;
+  LAdvId, LStepId: Int64;
+  LStep: TStep;
+  LDb: TFDConnection; LQ: TFDQuery;
+begin
+  LConn := TDbHelper.NewMemoryDb;
+  try
+    LBooks := TBooksRepo.Create(LConn);
+    LUsers := TUsersRepo.Create(LConn);
+    LAdv := TAdventuresRepo.Create(LConn);
+    LSteps := TStepsRepo.Create(LConn);
+    try
+      LAdvId := LAdv.Create(
+        LUsers.Insert('alice', 'h'),
+        LBooks.UpsertSeedBook('citadel', 'SJ'),
+        'Run');
+      LStepId := LSteps.InsertSetup(LAdvId);
+      LStep := LSteps.GetById(LStepId);
+      Assert.AreEqual('setup', LStep.Kind);
+      Assert.AreEqual(1, LStep.Seq, 'setup is the first step of the adventure');
+
+      // to_section must actually be NULL in the row.
+      LDb := TFDConnection.Create(nil); LQ := TFDQuery.Create(nil);
+      try
+        LDb.ConnectionDefName := LConn; LDb.Open; LQ.Connection := LDb;
+        LQ.Open('SELECT to_section FROM steps WHERE id=:i', [LStepId]);
+        Assert.IsTrue(LQ.FieldByName('to_section').IsNull,
+          'setup step must have NULL to_section');
+      finally
+        LQ.Free; LDb.Free;
+      end;
+    finally
+      LSteps.Free; LAdv.Free; LUsers.Free; LBooks.Free;
+    end;
+  finally
+    TDbHelper.Drop(LConn);
+  end;
+end;
+
+procedure TStepsRepoTests.NormalInsert_StillProducesKindNormal;
+var
+  LConn: string;
+  LBooks: TBooksRepo; LUsers: TUsersRepo; LAdv: TAdventuresRepo;
+  LSteps: TStepsRepo; LStepId: Int64; LStep: TStep;
+begin
+  LConn := TDbHelper.NewMemoryDb;
+  try
+    LBooks := TBooksRepo.Create(LConn);
+    LUsers := TUsersRepo.Create(LConn);
+    LAdv := TAdventuresRepo.Create(LConn);
+    LSteps := TStepsRepo.Create(LConn);
+    try
+      LStepId := LSteps.Insert(
+        LAdv.Create(LUsers.Insert('a','h'),
+                    LBooks.UpsertSeedBook('citadel','SJ'),
+                    'Run'),
+        0, 1, '', False, False, False);
+      LStep := LSteps.GetById(LStepId);
+      Assert.AreEqual('normal', LStep.Kind);
+    finally
+      LSteps.Free; LAdv.Free; LUsers.Free; LBooks.Free;
+    end;
+  finally
+    TDbHelper.Drop(LConn);
   end;
 end;
 

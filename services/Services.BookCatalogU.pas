@@ -60,7 +60,9 @@ implementation
 uses
   System.SysUtils, System.IOUtils, System.Generics.Collections,
   Models.BookU, Models.StatDefU,
-  Repositories.BooksU, Services.YamlReaderU;
+  Models.SpellDefU, Models.StartingItemU,
+  Repositories.BooksU, Repositories.SpellDefsU,
+  Repositories.BookStartingItemsU, Services.YamlReaderU;
 
 constructor TBookCatalogService.Create(const AConnectionName: string);
 begin
@@ -74,11 +76,18 @@ var
   LBook: TYamlBook;
   LStat: TYamlStat;
   LBookRepo: TBooksRepo;
-  LBookId, LStatDefId: Int64;
+  LItemRepo: TBookStartingItemsRepo;
+  LSpellRepo: TSpellDefsRepo;
+  LInv: TYamlStartingItem;
+  LSp: TYamlSpell;
+  LBookId, LStatDefId, LItemId, LSpellDefId: Int64;
   LTitlesPair: TPair<string, string>;
-  LOrd, I: Integer;
+  LOrd, I, LQty: Integer;
+  LDescVal: string;
   LBookTitles: TArray<TBookTitle>;
   LStatTitles: TArray<TStatDefTitle>;
+  LItemTitles: TArray<TStartingItemTitle>;
+  LSpellTitles: TArray<TSpellDefTitle>;
 begin
   if not TFile.Exists(AYamlPath) then
     Exit;
@@ -118,6 +127,61 @@ begin
           LBookRepo.SetStatDefTitles(LStatDefId, LStatTitles);
           Inc(LOrd);
         end;
+
+        // Starting inventory
+        LItemRepo := TBookStartingItemsRepo.Create(FConn);
+        try
+          LOrd := 0;
+          for LInv in LBook.StartingInventory do
+          begin
+            LQty := LInv.Quantity;
+            if LQty <= 0 then LQty := 1;
+            LItemId := LItemRepo.Upsert(LBookId, LInv.Slug, LOrd, LQty);
+            SetLength(LItemTitles, LInv.Titles.Count);
+            I := 0;
+            for LTitlesPair in LInv.Titles do
+            begin
+              LItemTitles[I].StartingItemId := LItemId;
+              LItemTitles[I].Lang := LTitlesPair.Key;
+              LItemTitles[I].DisplayName := LTitlesPair.Value;
+              Inc(I);
+            end;
+            LItemRepo.SetTitles(LItemId, LItemTitles);
+            Inc(LOrd);
+          end;
+        finally
+          LItemRepo.Free;
+        end;
+
+        // Spells
+        LSpellRepo := TSpellDefsRepo.Create(FConn);
+        try
+          LOrd := 0;
+          for LSp in LBook.Spells do
+          begin
+            LSpellDefId := LSpellRepo.UpsertSpellDef(LBookId, LSp.Slug, LOrd);
+            // Merge names + descriptions into spell_def_titles rows by lang.
+            LSpellTitles := nil;
+            for LTitlesPair in LSp.Names do
+            begin
+              SetLength(LSpellTitles, Length(LSpellTitles) + 1);
+              with LSpellTitles[High(LSpellTitles)] do
+              begin
+                SpellDefId := LSpellDefId;
+                Lang := LTitlesPair.Key;
+                DisplayName := LTitlesPair.Value;
+                if LSp.Descriptions.TryGetValue(LTitlesPair.Key, LDescVal) then
+                  Description := LDescVal
+                else
+                  Description := '';
+              end;
+            end;
+            LSpellRepo.SetTitles(LSpellDefId, LSpellTitles);
+            Inc(LOrd);
+          end;
+        finally
+          LSpellRepo.Free;
+        end;
       end;
     finally
       LBookRepo.Free;
@@ -131,6 +195,13 @@ begin
       LBook.Titles.Free;
       for LStat in LBook.Stats do
         LStat.Titles.Free;
+      for LInv in LBook.StartingInventory do
+        LInv.Titles.Free;
+      for LSp in LBook.Spells do
+      begin
+        LSp.Names.Free;
+        LSp.Descriptions.Free;
+      end;
     end;
   end;
 end;
