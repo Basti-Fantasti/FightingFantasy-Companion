@@ -106,6 +106,7 @@
         <DCCReference Include="..\models\Models.AdventureSpellU.pas"/>
         <DCCReference Include="..\services\Services.AdventureStateU.pas"/>
         <DCCReference Include="..\services\Services.GraphBuilderU.pas"/>
+        <DCCReference Include="..\services\Services.SpellU.pas"/>
         <DCCReference Include="TestHelpers.DbU.pas"/>
         <DCCReference Include="Tests.L10nU.pas"/>
         <DCCReference Include="Tests.MigrationU.pas"/>
@@ -121,6 +122,7 @@
         <DCCReference Include="Tests.Services.AdventureStateU.pas"/>
         <DCCReference Include="Tests.Services.AdventureStateU.Inventory.pas"/>
         <DCCReference Include="Tests.Services.GraphBuilderU.pas"/>
+        <DCCReference Include="Tests.Services.SpellU.pas"/>
         <DCCReference Include="..\config\AppConfigU.pas"/>
         <DCCReference Include="..\controllers\Controllers.BaseU.pas"/>
         <DCCReference Include="..\controllers\Controllers.AuthU.pas"/>
