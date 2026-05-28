@@ -1,0 +1,23 @@
+<div id="dice-panel" class="box ff-charsheet">
+  <h3 class="ff-section-head">{{:l10n.dice_panel_title}}</h3>
+  <div class="buttons">
+    <button class="button is-touch ff-numeric" hx-post="/adventures/{{:adventure.id}}/roll"
+            hx-vals='{"expression":"2d6"}' hx-target="#dice-panel" hx-swap="outerHTML">
+      {{:l10n.dice_roll_2d6}}
+    </button>
+    <button class="button is-touch ff-numeric" hx-post="/adventures/{{:adventure.id}}/roll"
+            hx-vals='{"expression":"1d6"}' hx-target="#dice-panel" hx-swap="outerHTML">
+      {{:l10n.dice_roll_1d6}}
+    </button>
+  </div>
+  {{if last_roll}}
+  <p>{{:l10n.dice_last}} <span class="ff-numeric">{{:last_roll.expression}}</span> = <span class="ff-dice-result ff-numeric">{{:last_roll.result}}</span></p>
+  {{endif}}
+  {{if recent_rolls}}
+  <ul class="ff-dice-history">
+  {{for r in recent_rolls}}
+    <li>{{:r.expression}}: <strong>{{:r.result}}</strong></li>
+  {{endfor}}
+  </ul>
+  {{endif}}
+</div>

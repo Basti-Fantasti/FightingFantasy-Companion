@@ -1,0 +1,142 @@
+{{extends "../../layouts/base.html"}}
+{{block "title"}}{{:adventure.title}} - {{:l10n.app_name}}{{endblock}}
+{{block "content"}}
+<div class="ff-stats-sticky" aria-hidden="false">
+  {{for stat in stats}}
+    {{if stat.is_integer}}
+    <span><span class="ff-sticky-label">{{:stat.display_name}}</span> <b>{{:stat.value}}</b></span>
+    {{endif}}
+  {{endfor}}
+</div>
+
+<div class="level">
+  <div class="level-left">
+    <div>
+      <h1 class="title">{{:adventure.title}}</h1>
+      <p class="subtitle is-6">{{:book_title}} &mdash; {{:l10n.lbl_status}}: {{:adventure.status}}</p>
+    </div>
+  </div>
+  <div class="level-right">
+    <form method="post" action="/adventures/{{:adventure.id}}/status" class="buttons">
+      <button class="button is-success" name="status" value="completed">{{:l10n.adv_btn_complete}}</button>
+      <button class="button is-warning" name="status" value="abandoned">{{:l10n.adv_btn_abandon}}</button>
+    </form>
+  </div>
+</div>
+
+<div class="columns">
+  <div class="column is-one-third">
+    {{include "../../partials/_stats_panel.html"}}
+    {{include "../../partials/_inventory_panel.html"}}
+    {{if spells_panel_visible}}
+    {{include "../../partials/_spells_panel.html"}}
+    {{endif}}
+    {{include "../../partials/_dice_panel.html"}}
+  </div>
+  <div class="column">
+    {{include "../../partials/_step_form.html"}}
+    <div class="ff-tabs" role="tablist" data-ff-tabs>
+      <button type="button" role="tab" id="tab-timeline" aria-controls="panel-timeline" aria-selected="true">{{:l10n.tab_timeline}}</button>
+      <button type="button" role="tab" id="tab-graph"    aria-controls="panel-graph"    aria-selected="false">{{:l10n.tab_graph}}</button>
+    </div>
+    <div id="panel-timeline" class="ff-tabpanel" role="tabpanel" aria-labelledby="tab-timeline">
+      {{include "../../partials/_timeline.html"}}
+    </div>
+    <div id="panel-graph" class="ff-tabpanel" role="tabpanel" aria-labelledby="tab-graph" hidden>
+      {{include "../../partials/_graph_tab.html"}}
+    </div>
+  </div>
+</div>
+<div id="modal-host"></div>
+{{endblock}}
+{{block "scripts"}}
+<script src="/static/js/cytoscape.min.js"></script>
+<script>
+  window.ffAdventureId = {{:adventure.id}};
+  let ffCy = null;
+  window.ffRefreshGraph = async function() {
+    if (!document.getElementById('cy')) return;
+    const r = await fetch('/adventures/' + window.ffAdventureId + '/graph.json');
+    if (!r.ok) return;
+    const data = await r.json();
+    // Place nodes left-to-right by first_seq so visual order matches the
+    // playthrough order. Revisits don't create new nodes, so positions stay
+    // stable; back-edges draw as visible arcs over the row.
+    const xSpacing = 110;
+    const yBase = 120;
+    const elements = [
+      ...data.nodes.map(n => ({
+        data: { id: n.id, label: '§' + n.section, visits: n.visits },
+        position: { x: n.first_seq * xSpacing, y: yBase },
+        classes: (n.section === data.current ? 'current ' : '') + (n.visits > 1 ? 'revisit' : '')
+      })),
+      ...data.edges.map(e => ({
+        data: { source: e.from, target: e.to, label: String(e.seq) }
+      }))
+    ];
+    const NODE_INK = '#1f1a14';
+    const NODE_PARCH = '#f4ead5';
+    const NODE_BRASS = '#b08438';
+    const NODE_OXBLOOD = '#7a1f1f';
+    if (!ffCy) {
+      ffCy = cytoscape({
+        container: document.getElementById('cy'),
+        elements: elements,
+        style: [
+          { selector: 'node', style: {
+              'label': 'data(label)',
+              'background-color': NODE_INK,
+              'color': NODE_PARCH,
+              'text-valign': 'center',
+              'text-halign': 'center',
+              'font-family': 'JetBrains Mono, monospace',
+              'font-size': 10,
+              'border-width': 1,
+              'border-color': NODE_INK
+          }},
+          { selector: 'node.current', style: {
+              'background-color': NODE_BRASS,
+              'color': NODE_INK,
+              'border-width': 2,
+              'border-color': NODE_INK
+          }},
+          { selector: 'node.revisit', style: {
+              'border-width': 2.5,
+              'border-color': NODE_OXBLOOD
+          }},
+          { selector: 'edge', style: {
+              'curve-style': 'unbundled-bezier',
+              'control-point-distances': [-50],
+              'control-point-weights': [0.5],
+              'target-arrow-shape': 'triangle',
+              'arrow-scale': 1.1,
+              'label': 'data(label)',
+              'font-family': 'JetBrains Mono, monospace',
+              'font-size': 9,
+              'text-background-color': NODE_PARCH,
+              'text-background-opacity': 1,
+              'text-background-padding': 2,
+              'color': NODE_INK,
+              'width': 1.5,
+              'line-color': NODE_INK,
+              'target-arrow-color': NODE_INK,
+              'opacity': 0.75
+          }}
+        ],
+        layout: { name: 'preset', fit: true, padding: 30 }
+      });
+    } else {
+      ffCy.json({ elements: elements });
+      ffCy.layout({ name: 'preset', fit: true, padding: 30 }).run();
+    }
+  };
+
+  // Render on tab activation (lazy — Cytoscape needs the container visible)
+  document.addEventListener('DOMContentLoaded', () => {
+    const tabGraph = document.getElementById('tab-graph');
+    if (tabGraph) {
+      tabGraph.addEventListener('click', () => setTimeout(() => window.ffRefreshGraph(), 0));
+    }
+  });
+</script>
+{{endblock}}

@@ -1,0 +1,32 @@
+{{if ispage}}<!DOCTYPE html>
+<html lang="{{:current_lang}}" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#dccfb1">
+  <title>{{block "title"}}{{:l10n.app_name}}{{endblock}}</title>
+  <link rel="icon" href="/static/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Spectral:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="/static/css/bulma.min.css">
+  <link rel="stylesheet" href="/static/css/app.css">
+  {{block "styles"}}{{endblock}}
+</head>
+<body>
+  <a class="ff-skip-link" href="#main-content">Skip to content</a>
+  {{include "../partials/_navbar.html"}}
+  <main id="main-content" class="section">
+    <div class="container">
+      {{include "../partials/_flash_messages.html"}}
+      {{endif}}
+      {{block "content"}}{{endblock}}
+      {{if ispage}}
+    </div>
+  </main>
+  {{include "../partials/_footer.html"}}
+  <script src="/static/js/htmx.min.js"></script>
+  <script src="/static/js/app.js"></script>
+  {{block "scripts"}}{{endblock}}
+</body>
+</html>{{endif}}

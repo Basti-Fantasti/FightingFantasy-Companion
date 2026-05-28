@@ -1,0 +1,22 @@
+{{extends "../../layouts/base.html"}}
+{{block "title"}}{{:l10n.signup_title}} - {{:l10n.app_name}}{{endblock}}
+{{block "content"}}
+<div class="ff-auth-shell">
+  <h1 class="title">{{:l10n.signup_title}}</h1>
+  <form method="post" action="/signup">
+    <div class="field">
+      <label class="label" for="signup-username">{{:l10n.lbl_username}}</label>
+      <div class="control"><input id="signup-username" class="input" type="text" name="username" autocomplete="username" required autofocus></div>
+    </div>
+    <div class="field">
+      <label class="label" for="signup-password">{{:l10n.lbl_password}}</label>
+      <div class="control"><input id="signup-password" class="input" type="password" name="password" autocomplete="new-password" required></div>
+    </div>
+    {{if error}}<div class="notification is-danger">{{:error}}</div>{{endif}}
+    <div class="field">
+      <button class="button is-primary is-fullwidth">{{:l10n.nav_signup}}</button>
+    </div>
+  </form>
+  <p class="ff-aside"><a href="/login">{{:l10n.nav_login}}</a></p>
+</div>
+{{endblock}}

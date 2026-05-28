@@ -1,0 +1,24 @@
+<form id="step-form" hx-post="/adventures/{{:adventure.id}}/steps"
+      hx-target="this" hx-swap="outerHTML" class="box ff-charsheet">
+  <input type="hidden" name="last_step_id" value="{{:adventure.last_step_id}}">
+  <div class="field is-grouped">
+    <div class="control">
+      <label class="label" for="step-from">{{:l10n.step_form_from}}</label>
+      <input id="step-from" class="input ff-numeric" name="from_section" value="{{:current_section}}" readonly>
+    </div>
+    <div class="control is-expanded">
+      <label class="label" for="step-to">{{:l10n.step_form_to}}</label>
+      <input id="step-to" class="input ff-numeric" name="to_section" type="number" inputmode="numeric" pattern="[0-9]*" min="1" required autofocus>
+    </div>
+  </div>
+  <div class="field">
+    <label class="label" for="step-note">{{:l10n.step_form_note}}</label>
+    <input id="step-note" class="input" name="note">
+  </div>
+  <div class="field">
+    <label class="checkbox mr-3"><input type="checkbox" name="flag_fight" value="1"> {{:l10n.step_flag_fight}}</label>
+    <label class="checkbox mr-3"><input type="checkbox" name="flag_item"  value="1"> {{:l10n.step_flag_item}}</label>
+    <label class="checkbox"><input type="checkbox" name="flag_stat"  value="1"> {{:l10n.step_flag_stat}}</label>
+  </div>
+  <button class="button is-primary is-touch">{{:l10n.step_btn_log}}</button>
+</form>

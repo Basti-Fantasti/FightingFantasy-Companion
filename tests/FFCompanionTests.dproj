@@ -1,0 +1,179 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{C7E4F4A2-9B1D-4F60-8B22-1A2C4D6E7F31}</ProjectGuid>
+        <ProjectVersion>20.2</ProjectVersion>
+        <FrameworkType>VCL</FrameworkType>
+        <Base>True</Base>
+        <Config Condition="'$(Config)'==''">Debug</Config>
+        <Platform Condition="'$(Platform)'==''">Win64</Platform>
+        <TargetedPlatforms>2</TargetedPlatforms>
+        <AppType>Console</AppType>
+        <MainSource>FFCompanionTests.dpr</MainSource>
+        <ProjectName Condition="'$(ProjectName)'==''">FFCompanionTests</ProjectName>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Base)'=='true') or '$(Base_Win64)'!=''">
+        <Base_Win64>true</Base_Win64>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_1)'!=''">
+        <Cfg_1>true</Cfg_1>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Cfg_1)'=='true') or '$(Cfg_1_Win64)'!=''">
+        <Cfg_1_Win64>true</Cfg_1_Win64>
+        <CfgParent>Cfg_1</CfgParent>
+        <Cfg_1>true</Cfg_1>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_2)'!=''">
+        <Cfg_2>true</Cfg_2>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Base)'!=''">
+        <DCC_DcuOutput>.\$(Platform)\$(Config)\dcu</DCC_DcuOutput>
+        <DCC_ExeOutput>.\bin\$(Platform)\$(Config)</DCC_ExeOutput>
+        <DCC_E>false</DCC_E>
+        <DCC_N>false</DCC_N>
+        <DCC_S>false</DCC_S>
+        <DCC_F>false</DCC_F>
+        <DCC_K>false</DCC_K>
+        <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;$(DCC_Namespace)</DCC_Namespace>
+        <DCC_UnitSearchPath>..\controllers;..\models;..\services;..\repositories;..\config;..\webmodule;..\tests;X:\Delphi_libs\D12\dmvcframework\sources;X:\Delphi_libs\D12\dmvcframework\lib\loggerpro;X:\Delphi_libs\D12\dmvcframework\lib\dmustache;X:\Delphi_libs\D12\dmvcframework\lib\swagdoc\Source;X:\Delphi_libs\D12\bcrypt\src;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+        <DCC_OutputDRCFile>true</DCC_OutputDRCFile>
+        <SanitizedProjectName>FFCompanionTests</SanitizedProjectName>
+        <VerInfo_Locale>1031</VerInfo_Locale>
+        <VerInfo_Keys>CompanyName=;FileDescription=$(MSBuildProjectName);FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Base_Win64)'!=''">
+        <DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;$(DCC_Namespace)</DCC_Namespace>
+        <BT_BuildType>Debug</BT_BuildType>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_1)'!=''">
+        <DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>
+        <DCC_DebugDCUs>true</DCC_DebugDCUs>
+        <DCC_Optimize>false</DCC_Optimize>
+        <DCC_GenerateStackFrames>true</DCC_GenerateStackFrames>
+        <DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
+        <DCC_RemoteDebug>true</DCC_RemoteDebug>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
+        <Manifest_File>(None)</Manifest_File>
+        <AppDPIAwarenessMode>none</AppDPIAwarenessMode>
+        <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_2)'!=''">
+        <DCC_LocalDebugSymbols>false</DCC_LocalDebugSymbols>
+        <DCC_Define>RELEASE;$(DCC_Define)</DCC_Define>
+        <DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
+        <DCC_DebugInformation>0</DCC_DebugInformation>
+    </PropertyGroup>
+    <ItemGroup>
+        <DelphiCompile Include="$(MainSource)">
+            <MainSource>MainSource</MainSource>
+        </DelphiCompile>
+        <DCCReference Include="..\repositories\Repositories.MigrationU.pas"/>
+        <DCCReference Include="..\models\Models.UserU.pas"/>
+        <DCCReference Include="..\models\Models.SessionU.pas"/>
+        <DCCReference Include="..\repositories\Repositories.UsersU.pas"/>
+        <DCCReference Include="..\repositories\Repositories.SessionsU.pas"/>
+        <DCCReference Include="..\services\Services.AuthU.pas"/>
+        <DCCReference Include="..\models\Models.BookU.pas"/>
+        <DCCReference Include="..\models\Models.StatDefU.pas"/>
+        <DCCReference Include="..\repositories\Repositories.BooksU.pas"/>
+        <DCCReference Include="..\services\Services.LocalizedTitleU.pas"/>
+        <DCCReference Include="..\services\Services.YamlReaderU.pas"/>
+        <DCCReference Include="..\services\Services.BookCatalogU.pas"/>
+        <DCCReference Include="..\models\Models.AdventureU.pas"/>
+        <DCCReference Include="..\repositories\Repositories.AdventuresU.pas"/>
+        <DCCReference Include="..\models\Models.StepU.pas"/>
+        <DCCReference Include="..\models\Models.SpellDefU.pas"/>
+        <DCCReference Include="..\models\Models.AdventureSpellU.pas"/>
+        <DCCReference Include="..\models\Models.StartingItemU.pas"/>
+        <DCCReference Include="..\repositories\Repositories.StepsU.pas"/>
+        <DCCReference Include="..\models\Models.StatChangeU.pas"/>
+        <DCCReference Include="..\repositories\Repositories.StatChangesU.pas"/>
+        <DCCReference Include="..\models\Models.InventoryEventU.pas"/>
+        <DCCReference Include="..\repositories\Repositories.InventoryEventsU.pas"/>
+        <DCCReference Include="..\repositories\Repositories.SpellDefsU.pas"/>
+        <DCCReference Include="..\repositories\Repositories.BookStartingItemsU.pas"/>
+        <DCCReference Include="..\repositories\Repositories.AdventureSpellsU.pas"/>
+        <DCCReference Include="..\models\Models.AdventureSpellU.pas"/>
+        <DCCReference Include="..\services\Services.AdventureStateU.pas"/>
+        <DCCReference Include="..\services\Services.GraphBuilderU.pas"/>
+        <DCCReference Include="..\services\Services.SpellU.pas"/>
+        <DCCReference Include="..\services\Services.AdventureCreateU.pas"/>
+        <DCCReference Include="TestHelpers.DbU.pas"/>
+        <DCCReference Include="Tests.L10nU.pas"/>
+        <DCCReference Include="Tests.MigrationU.pas"/>
+        <DCCReference Include="Tests.Services.AuthU.pas"/>
+        <DCCReference Include="Tests.Services.LocalizedTitleU.pas"/>
+        <DCCReference Include="Tests.Services.YamlReaderU.pas"/>
+        <DCCReference Include="Tests.Services.BookCatalogU.pas"/>
+        <DCCReference Include="Tests.Repositories.AdventuresU.pas"/>
+        <DCCReference Include="Tests.Repositories.StepsU.pas"/>
+        <DCCReference Include="Tests.Repositories.SpellDefsU.pas"/>
+        <DCCReference Include="Tests.Repositories.BookStartingItemsU.pas"/>
+        <DCCReference Include="Tests.Repositories.AdventureSpellsU.pas"/>
+        <DCCReference Include="Tests.Services.AdventureStateU.pas"/>
+        <DCCReference Include="Tests.Services.AdventureStateU.Inventory.pas"/>
+        <DCCReference Include="Tests.Services.GraphBuilderU.pas"/>
+        <DCCReference Include="Tests.Services.SpellU.pas"/>
+        <DCCReference Include="Tests.Services.AdventureCreateU.pas"/>
+        <DCCReference Include="..\config\AppConfigU.pas"/>
+        <DCCReference Include="..\controllers\Controllers.BaseU.pas"/>
+        <DCCReference Include="..\controllers\Controllers.AuthU.pas"/>
+        <DCCReference Include="..\controllers\Controllers.BooksU.pas"/>
+        <DCCReference Include="..\controllers\Controllers.AdventuresU.pas"/>
+        <DCCReference Include="..\controllers\Controllers.StepsU.pas"/>
+        <DCCReference Include="..\controllers\Controllers.StatsU.pas"/>
+        <DCCReference Include="..\controllers\Controllers.InventoryU.pas"/>
+        <DCCReference Include="..\controllers\Controllers.DiceU.pas"/>
+        <DCCReference Include="..\controllers\Controllers.GraphU.pas"/>
+        <DCCReference Include="..\controllers\Controllers.SpellsU.pas"/>
+        <DCCReference Include="..\models\Models.DiceRollU.pas"/>
+        <DCCReference Include="..\repositories\Repositories.DiceRollsU.pas"/>
+        <DCCReference Include="..\webmodule\WebModuleU.pas">
+            <Form>FFWebModule</Form>
+            <FormType>dfm</FormType>
+            <DesignClass>TWebModule</DesignClass>
+        </DCCReference>
+        <DCCReference Include="Tests.E2E.PlaythroughU.pas"/>
+        <BuildConfiguration Include="Base">
+            <Key>Base</Key>
+        </BuildConfiguration>
+        <BuildConfiguration Include="Debug">
+            <Key>Cfg_1</Key>
+            <CfgParent>Base</CfgParent>
+        </BuildConfiguration>
+        <BuildConfiguration Include="Release">
+            <Key>Cfg_2</Key>
+            <CfgParent>Base</CfgParent>
+        </BuildConfiguration>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Delphi.Personality.12</Borland.Personality>
+        <Borland.ProjectType>Console</Borland.ProjectType>
+        <BorlandProject>
+            <Delphi.Personality>
+                <Source>
+                    <Source Name="MainSource">FFCompanionTests.dpr</Source>
+                </Source>
+            </Delphi.Personality>
+            <Platforms>
+                <Platform value="Win32">False</Platform>
+                <Platform value="Win64">True</Platform>
+                <Platform value="Linux64">False</Platform>
+            </Platforms>
+        </BorlandProject>
+        <ProjectFileVersion>12</ProjectFileVersion>
+    </ProjectExtensions>
+    <Import Project="$(BDS)\Bin\CodeGear.Delphi.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Delphi.Targets')"/>
+    <Import Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj" Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')"/>
+    <Import Project="$(MSBuildProjectName).deployproj" Condition="Exists('$(MSBuildProjectName).deployproj')"/>
+</Project>

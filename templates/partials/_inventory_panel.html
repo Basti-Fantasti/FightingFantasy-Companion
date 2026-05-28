@@ -1,0 +1,37 @@
+<div id="inventory-panel" class="box ff-charsheet">
+  <h3 class="ff-section-head">{{:l10n.inv_panel_title}}</h3>
+  <table class="table is-narrow is-fullwidth">
+    <tbody>
+    {{for item in inventory}}
+      <tr>
+        <td>{{:item.name}}</td>
+        <td>
+          <button class="button ff-numeric"
+                  hx-get="/adventures/{{:adventure.id}}/inventory/{{:item.name_url}}/modal"
+                  hx-target="#modal-host" hx-swap="innerHTML">
+            &times;{{:item.quantity}}
+          </button>
+        </td>
+        <td>
+          <form hx-post="/adventures/{{:adventure.id}}/inventory" hx-target="#inventory-panel" hx-swap="outerHTML">
+            <input type="hidden" name="kind" value="lose">
+            <input type="hidden" name="item_name" value="{{:item.name}}">
+            <input type="hidden" name="quantity" value="{{:item.quantity}}">
+            <input type="hidden" name="last_step_id" value="{{:adventure.last_step_id}}">
+            <button class="button is-danger" title="{{:l10n.btn_delete}}" aria-label="{{:l10n.btn_delete}}">&times;</button>
+          </form>
+        </td>
+      </tr>
+    {{endfor}}
+    </tbody>
+  </table>
+  <form hx-post="/adventures/{{:adventure.id}}/inventory" hx-target="#inventory-panel" hx-swap="outerHTML">
+    <input type="hidden" name="kind" value="gain">
+    <input type="hidden" name="last_step_id" value="{{:adventure.last_step_id}}">
+    <div class="field is-grouped">
+      <div class="control is-expanded"><input class="input" name="item_name" placeholder="{{:l10n.inv_item_name}}" required></div>
+      <div class="control"><input class="input ff-numeric" name="quantity" type="number" inputmode="numeric" pattern="[0-9]*" value="1" min="1" style="width: 5rem;"></div>
+      <div class="control"><button class="button is-primary">+ {{:l10n.inv_add_item}}</button></div>
+    </div>
+  </form>
+</div>

@@ -1,0 +1,33 @@
+{{extends "../../layouts/base.html"}}
+{{block "title"}}{{:l10n.adv_new_title}} - {{:l10n.app_name}}{{endblock}}
+{{block "content"}}
+<h1 class="title">{{:l10n.adv_new_title}}</h1>
+{{if error}}<div class="notification is-danger">{{:error}}</div>{{endif}}
+<form method="post" action="/adventures">
+  <div class="field">
+    <label class="label">{{:l10n.adv_select_book}}</label>
+    <div class="control">
+      <div class="select">
+        <select name="book_id" required
+                hx-get="/adventures/new/sections"
+                hx-trigger="change"
+                hx-target="#book-sections"
+                hx-swap="innerHTML"
+                hx-include="this">
+          <option value="" disabled selected>{{:l10n.adv_book_placeholder}}</option>
+          {{for book in books}}
+            <option value="{{:book.id}}">{{:book.title}}</option>
+          {{endfor}}
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div id="book-sections"></div>
+
+  <div class="field">
+    <button class="button is-primary">{{:l10n.btn_create}}</button>
+    <a class="button is-light" href="/">{{:l10n.btn_cancel}}</a>
+  </div>
+</form>
+{{endblock}}

@@ -1,0 +1,24 @@
+<nav class="navbar is-primary" role="navigation" aria-label="main">
+  <div class="navbar-brand">
+    <a class="navbar-item" href="/"><strong>{{:l10n.app_name}}</strong></a>
+  </div>
+  <div class="navbar-menu">
+    <div class="navbar-end">
+      <div class="navbar-item">
+        <span class="ff-lang">
+          <a href="?lang=de" class="{{if current_lang|eq,de}}is-current{{endif}}">DE</a>
+          <span class="ff-lang-sep">·</span>
+          <a href="?lang=en" class="{{if current_lang|eq,en}}is-current{{endif}}">EN</a>
+        </span>
+      </div>
+      {{if current_user}}
+        <div class="navbar-item">{{:current_user.username}}</div>
+        <div class="navbar-item">
+          <form method="post" action="/logout"><button class="button is-light">{{:l10n.nav_logout}}</button></form>
+        </div>
+      {{else}}
+        <div class="navbar-item"><a href="/login" class="button is-light">{{:l10n.nav_login}}</a></div>
+      {{endif}}
+    </div>
+  </div>
+</nav>

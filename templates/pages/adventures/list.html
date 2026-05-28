@@ -1,0 +1,54 @@
+{{extends "../../layouts/base.html"}}
+{{block "title"}}{{:l10n.adv_dashboard_title}} - {{:l10n.app_name}}{{endblock}}
+{{block "content"}}
+<div class="level">
+  <div class="level-left">
+    <h1 class="title">{{:l10n.adv_dashboard_title}}</h1>
+  </div>
+  <div class="level-right">
+    <a class="button is-primary" href="/adventures/new">+ {{:l10n.adv_btn_new}}</a>
+  </div>
+</div>
+
+{{if active}}
+<div class="ff-adventure-grid">
+  {{for a in active}}
+    <a class="ff-adventure-card" href="/adventures/{{:a.id}}">
+      <div class="ff-card-title">{{:a.title}}</div>
+      <div class="ff-card-book">{{:a.book_title}}</div>
+      <div class="ff-card-meta">
+        <span class="tag">{{:a.status}}</span>
+        <span>{{:a.started_at}}</span>
+      </div>
+    </a>
+  {{endfor}}
+</div>
+{{else}}
+<div class="ff-empty">
+  <svg width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+    <path d="M14 8h28a4 4 0 0 1 4 4v40a4 4 0 0 1-4 4H18a4 4 0 0 1-4-4V8z"/>
+    <path d="M46 8v44" stroke-dasharray="2 3"/>
+    <path d="M22 20h16M22 28h16M22 36h10"/>
+  </svg>
+  <div class="ff-empty-title">{{:l10n.adv_no_active}}</div>
+  <div class="ff-empty-body">&nbsp;</div>
+  <a class="button is-primary" href="/adventures/new">+ {{:l10n.adv_btn_new}}</a>
+</div>
+{{endif}}
+
+{{if archived}}
+<h2 class="subtitle mt-6">{{:l10n.adv_dashboard_archived}}</h2>
+<div class="ff-adventure-grid">
+  {{for a in archived}}
+    <a class="ff-adventure-card is-archived" href="/adventures/{{:a.id}}">
+      <div class="ff-card-title">{{:a.title}}</div>
+      <div class="ff-card-book">{{:a.book_title}}</div>
+      <div class="ff-card-meta">
+        <span class="tag">{{:a.status}}</span>
+        <span>{{:a.started_at}}</span>
+      </div>
+    </a>
+  {{endfor}}
+</div>
+{{endif}}
+{{endblock}}

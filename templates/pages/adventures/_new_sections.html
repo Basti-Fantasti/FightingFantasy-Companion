@@ -1,0 +1,152 @@
+<div class="field">
+  <label class="label">{{:l10n.adventures_title_label}}</label>
+  <div class="control">
+    <input class="input" type="text" name="title" required>
+  </div>
+</div>
+
+<div class="box mt-4">
+  <h2 class="title is-5">{{:l10n.adventures_stats_heading}}</h2>
+  {{for stat in stats}}
+    <div class="field is-horizontal">
+      <div class="field-label is-normal"><label class="label">{{:stat.display_name}}</label></div>
+      <div class="field-body">
+        <div class="field">
+          <div class="control">
+            {{if stat.is_magic}}
+              <input class="input" type="number" name="stat_{{:stat.id}}" value="{{:stat.default_value}}" id="spell-budget-input">
+            {{else}}
+              <input class="input" type="number" name="stat_{{:stat.id}}" value="{{:stat.default_value}}">
+            {{endif}}
+          </div>
+        </div>
+      </div>
+    </div>
+  {{endfor}}
+</div>
+
+{{if gear_present}}
+<div class="box mt-4">
+  <h2 class="title is-5">{{:l10n.adventures_gear_heading}}</h2>
+  <table class="table is-fullwidth">
+    <thead>
+      <tr>
+        <th></th>
+        <th>{{:l10n.adventures_gear_item}}</th>
+        <th style="width:6rem">{{:l10n.adventures_gear_qty}}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{for item in gear}}
+        <tr>
+          <td>
+            <input type="checkbox" name="gear_keep_{{:item.slug}}" value="1" checked>
+          </td>
+          <td>
+            <input class="input is-small" type="text" name="gear_name_{{:item.slug}}" value="{{:item.display_name}}">
+          </td>
+          <td>
+            <input class="input is-small" type="number" min="1" name="gear_qty_{{:item.slug}}" value="{{:item.quantity}}">
+          </td>
+        </tr>
+      {{endfor}}
+    </tbody>
+  </table>
+</div>
+{{endif}}
+
+{{if spells_present}}
+<div class="box mt-4" id="spell-picker">
+  <h2 class="title is-5">{{:l10n.adventures_spells_heading}}</h2>
+  <p class="subtitle is-6">
+    <span id="spell-picked">0</span> / <span id="spell-budget">{{:spell_budget}}</span>
+    {{:l10n.adventures_spells_chosen}}
+  </p>
+  <table class="table is-fullwidth">
+    <tbody>
+      {{for spell in spells}}
+        <tr>
+          <td>
+            <strong>{{:spell.display_name}}</strong><br>
+            <small>{{:spell.description}}</small>
+          </td>
+          <td style="width:10rem; text-align:right">
+            <button type="button" class="button is-small spell-dec" data-id="{{:spell.id}}">&minus;</button>
+            <span class="spell-count" data-id="{{:spell.id}}">0</span>
+            <input type="hidden" name="spell_count_{{:spell.id}}" value="0" id="spell_count_{{:spell.id}}">
+            <button type="button" class="button is-small spell-inc" data-id="{{:spell.id}}">+</button>
+          </td>
+        </tr>
+      {{endfor}}
+    </tbody>
+  </table>
+</div>
+
+<script>
+(function () {
+  const budgetEl = document.getElementById('spell-budget');
+  const pickedEl = document.getElementById('spell-picked');
+  const magicEl  = document.getElementById('spell-budget-input');
+  function budget() {
+    if (magicEl) {
+      const v = parseInt(magicEl.value, 10);
+      if (!isNaN(v) && v >= 0) return v;
+    }
+    return parseInt(budgetEl.textContent, 10) || 0;
+  }
+  function total() {
+    let s = 0;
+    document.querySelectorAll('.spell-count').forEach(el => s += parseInt(el.textContent,10));
+    return s;
+  }
+  function setCount(id, v) {
+    if (v < 0) v = 0;
+    document.querySelector('.spell-count[data-id="'+id+'"]').textContent = v;
+    document.getElementById('spell_count_'+id).value = v;
+  }
+  // When the budget shrinks below current picks, walk the picked spells in
+  // reverse and decrement until the running total fits the new budget.
+  function clampToBudget() {
+    const b = budget();
+    const counts = Array.from(document.querySelectorAll('.spell-count'));
+    let sum = counts.reduce((s,el)=>s+parseInt(el.textContent,10),0);
+    for (let i = counts.length-1; i >= 0 && sum > b; i--) {
+      const id = counts[i].getAttribute('data-id');
+      let c = parseInt(counts[i].textContent,10);
+      while (c > 0 && sum > b) { c--; sum--; }
+      setCount(id, c);
+    }
+  }
+  function refresh() {
+    const b = budget();
+    budgetEl.textContent = b;
+    clampToBudget();
+    pickedEl.textContent = total();
+    const atMax = total() >= b;
+    document.querySelectorAll('.spell-inc').forEach(btn => btn.disabled = atMax || b <= 0);
+    document.querySelectorAll('.spell-dec').forEach(btn => {
+      const id = btn.getAttribute('data-id');
+      const c = parseInt(document.querySelector('.spell-count[data-id="'+id+'"]').textContent,10);
+      btn.disabled = c <= 0;
+    });
+  }
+  function bump(id, delta) {
+    const cEl = document.querySelector('.spell-count[data-id="'+id+'"]');
+    let v = parseInt(cEl.textContent,10) + delta;
+    if (v < 0) v = 0;
+    if (total() - parseInt(cEl.textContent,10) + v > budget()) return;
+    setCount(id, v);
+    refresh();
+  }
+  document.querySelectorAll('.spell-inc').forEach(b =>
+    b.addEventListener('click', () => bump(b.getAttribute('data-id'), +1)));
+  document.querySelectorAll('.spell-dec').forEach(b =>
+    b.addEventListener('click', () => bump(b.getAttribute('data-id'), -1)));
+  if (magicEl) {
+    magicEl.addEventListener('input', refresh);
+    magicEl.addEventListener('change', refresh);
+  }
+  refresh();
+})();
+</script>
+{{endif}}

@@ -1,0 +1,47 @@
+- slug: citadel-of-chaos
+  author: Steve Jackson
+  titles:
+    en: The Citadel of Chaos
+    de: Die Zitadelle des Zauberers
+  stats:
+    - { name: skill,   kind: integer, default: 0, titles: { en: Skill,   de: Gewandtheit } }
+    - { name: stamina, kind: integer, default: 0, titles: { en: Stamina, de: Stärke } }
+    - { name: luck,    kind: integer, default: 0, titles: { en: Luck,    de: Glück } }
+    - { name: magic,   kind: integer, default: 0, titles: { en: Magic,   de: Zauberkraft } }
+  starting_inventory:
+    - { slug: sword,         titles: { de: Schwert,      en: Sword } }
+    - { slug: leather-armor, titles: { de: Lederrüstung, en: Leather Armor } }
+    - { slug: torch,         titles: { de: Fackel,       en: Torch } }
+  spells:
+    - { slug: weakness,     names: { de: Schwäche,     en: Weakness },     descriptions: { de: "Senkt die Gewandtheit eines Gegners.", en: "Lowers a foe's Skill." } }
+    - { slug: strength,     names: { de: Stärke,       en: Strength },     descriptions: { de: "Erhöht die eigene Gewandtheit.",       en: "Raises your Skill." } }
+    - { slug: luck-spell,   names: { de: Glück,        en: Luck },         descriptions: { de: "Erhöht den Glückswert.",               en: "Raises your Luck." } }
+    - { slug: stamina,      names: { de: Lebenskraft,  en: Stamina },      descriptions: { de: "Stellt Stärke wieder her.",            en: "Restores Stamina." } }
+    - { slug: shielding,    names: { de: Abschirmung,  en: Shielding },    descriptions: { de: "Wehrt einen Angriff ab.",              en: "Wards off an attack." } }
+    - { slug: illusion,     names: { de: Illusion,     en: Illusion },     descriptions: { de: "Erzeugt eine Trugbild.",               en: "Creates an illusion." } }
+    - { slug: levitation,   names: { de: Schwerelosigkeit, en: Levitation }, descriptions: { de: "Hebt dich vom Boden.",               en: "Lifts you off the ground." } }
+    - { slug: friendship,   names: { de: Freundschaft, en: Friendship },   descriptions: { de: "Macht einen Gegner zum Freund.",      en: "Makes a foe friendly." } }
+    - { slug: language,     names: { de: Sprache,      en: Language },     descriptions: { de: "Du verstehst eine fremde Sprache.",   en: "Understand any language." } }
+    - { slug: open,         names: { de: Öffnen,       en: Open },         descriptions: { de: "Öffnet ein Schloss.",                 en: "Opens a lock." } }
+    - { slug: weakness-undo, names: { de: Schwäche aufheben, en: Undo Weakness }, descriptions: { de: "Hebt eine Schwäche-Wirkung auf.", en: "Reverses a Weakness spell." } }
+    - { slug: e-s-p,        names: { de: Gedankenlesen, en: ESP },         descriptions: { de: "Liest die Gedanken einer Kreatur.",   en: "Reads creature thoughts." } }
+    - { slug: fire,         names: { de: Feuer,        en: Fire },         descriptions: { de: "Entfacht eine Flamme.",               en: "Conjures fire." } }
+    - { slug: creature-copy, names: { de: Kreatur-Abbild, en: Creature Copy }, descriptions: { de: "Erzeugt ein Abbild einer Kreatur.", en: "Creates a creature double." } }
+
+- slug: warlock-of-firetop-mountain
+  author: Steve Jackson & Ian Livingstone
+  titles:
+    en: The Warlock of Firetop Mountain
+  stats:
+    - { name: skill,   kind: integer, default: 0, titles: { en: Skill,   de: Geschicklichkeit } }
+    - { name: stamina, kind: integer, default: 0, titles: { en: Stamina, de: Ausdauer } }
+    - { name: luck,    kind: integer, default: 0, titles: { en: Luck,    de: Glück } }
+
+- slug: deathtrap-dungeon
+  author: Ian Livingstone
+  titles:
+    en: Deathtrap Dungeon
+  stats:
+    - { name: skill,   kind: integer, default: 0, titles: { en: Skill,   de: Geschicklichkeit } }
+    - { name: stamina, kind: integer, default: 0, titles: { en: Stamina, de: Ausdauer } }
+    - { name: luck,    kind: integer, default: 0, titles: { en: Luck,    de: Glück } }
