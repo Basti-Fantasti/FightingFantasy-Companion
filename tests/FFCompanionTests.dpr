@@ -79,6 +79,7 @@ uses
   Controllers.InventoryU in '..\controllers\Controllers.InventoryU.pas',
   Controllers.DiceU in '..\controllers\Controllers.DiceU.pas',
   Controllers.GraphU in '..\controllers\Controllers.GraphU.pas',
+  Controllers.SpellsU in '..\controllers\Controllers.SpellsU.pas',
   Models.DiceRollU in '..\models\Models.DiceRollU.pas',
   Repositories.DiceRollsU in '..\repositories\Repositories.DiceRollsU.pas',
   WebModuleU in '..\webmodule\WebModuleU.pas' {FFWebModule: TWebModule},

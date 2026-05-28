@@ -1,0 +1,35 @@
+<div id="spells-panel" class="box">
+  <h3 class="subtitle is-5">{{:l10n.adventures_spells_panel_heading}}</h3>
+  <h4 class="subtitle is-6">{{:l10n.adventures_spells_available}}</h4>
+  {{if spells_available_none}}
+    <p><em>{{:l10n.adventures_spells_none}}</em></p>
+  {{endif}}
+  {{for s in spells_available}}
+    <div class="level">
+      <div class="level-left">
+        <strong>{{:s.display_name}}</strong>
+        {{if s.count_gt_one}}<span class="tag ml-2">&times;{{:s.count}}</span>{{endif}}
+      </div>
+      <div class="level-right">
+        <form hx-post="/adventures/{{:adventure_id}}/spells/cast"
+              hx-target="#spells-panel"
+              hx-swap="outerHTML">
+          <input type="hidden" name="spell_def_id" value="{{:s.id}}">
+          <button class="button is-small is-primary" type="submit">
+            {{:l10n.adventures_spells_cast}}
+          </button>
+        </form>
+      </div>
+    </div>
+  {{endfor}}
+
+  {{if spells_consumed_any}}
+    <h4 class="subtitle is-6 mt-4">{{:l10n.adventures_spells_consumed}}</h4>
+    {{for c in spells_consumed}}
+      <div>
+        <span class="has-text-grey">{{:c.display_name}}</span>
+        {{if c.count_gt_one}}<span class="tag is-light ml-2">&times;{{:c.count}}</span>{{endif}}
+      </div>
+    {{endfor}}
+  {{endif}}
+</div>

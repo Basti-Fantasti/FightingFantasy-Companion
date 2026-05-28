@@ -20,6 +20,9 @@
   <div class="column is-one-third">
     {{include "../../partials/_stats_panel.html"}}
     {{include "../../partials/_inventory_panel.html"}}
+    {{if spells_panel_visible}}
+    {{include "../../partials/_spells_panel.html"}}
+    {{endif}}
     {{include "../../partials/_dice_panel.html"}}
   </div>
   <div class="column">

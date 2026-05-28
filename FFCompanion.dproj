@@ -137,6 +137,7 @@
         <DCCReference Include="services\Services.SpellU.pas"/>
         <DCCReference Include="services\Services.AdventureCreateU.pas"/>
         <DCCReference Include="controllers\Controllers.GraphU.pas"/>
+        <DCCReference Include="controllers\Controllers.SpellsU.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

@@ -130,6 +130,7 @@ uses
   Models.AdventureU, Models.BookU, Models.StepU,
   Models.DiceRollU,
   Models.StatDefU, Models.StartingItemU, Models.SpellDefU,
+  Models.AdventureSpellU,
   Repositories.AdventuresU, Repositories.BooksU, Repositories.StepsU,
   Repositories.DiceRollsU,
   Repositories.SpellDefsU, Repositories.BookStartingItemsU,
@@ -594,6 +595,11 @@ var
   LBookTitle: string;
   LCurrentLang, LDefaultLang: string;
   LCurrentSection: Integer;
+  LSpellSnapshot: TArray<TAdventureSpellGroup>;
+  LSpellGroup: TAdventureSpellGroup;
+  LSpellAvailArr, LSpellConsumedArr: TJsonArray;
+  LSpellObj: TJsonObject;
+  LSpellConsumedAny: Boolean;
 begin
   RequireLogin;
   LCurrentLang := ViewData['current_lang'].AsString;
@@ -665,8 +671,37 @@ begin
     finally
       LInvList.Free;
     end;
+
+    // Spells panel snapshot: one row per spell_def used in this adventure,
+    // split into Available / Consumed buckets for the partial. Pre-resolved
+    // boolean flags (count_gt_one, spells_available_none, spells_consumed_any)
+    // keep the template free of negation and comparison operators.
+    LSpellSnapshot := LStateSvc.GetSpellSnapshot(LAdv.Id, LCurrentLang);
   finally
     LStateSvc.Free;
+  end;
+
+  LSpellAvailArr := TJsonArray.Create;
+  LSpellConsumedArr := TJsonArray.Create;
+  LSpellConsumedAny := False;
+  for LSpellGroup in LSpellSnapshot do
+  begin
+    if LSpellGroup.Available > 0 then
+    begin
+      LSpellObj := LSpellAvailArr.AddObject;
+      LSpellObj.L['id']           := LSpellGroup.SpellDefId;
+      LSpellObj.S['display_name'] := LSpellGroup.DisplayName;
+      LSpellObj.I['count']        := LSpellGroup.Available;
+      LSpellObj.B['count_gt_one'] := LSpellGroup.Available > 1;
+    end;
+    if LSpellGroup.Consumed > 0 then
+    begin
+      LSpellConsumedAny := True;
+      LSpellObj := LSpellConsumedArr.AddObject;
+      LSpellObj.S['display_name'] := LSpellGroup.DisplayName;
+      LSpellObj.I['count']        := LSpellGroup.Consumed;
+      LSpellObj.B['count_gt_one'] := LSpellGroup.Consumed > 1;
+    end;
   end;
 
   // Timeline: pull the full step list (including undone rows so the partial
@@ -716,12 +751,18 @@ begin
     ViewData['recent_rolls'] := LRecentArr;
   end;
 
-  ViewData['adventure']       := LAdvObj;
-  ViewData['book_title']      := LBookTitle;
-  ViewData['current_section'] := IntToStr(LCurrentSection);
-  ViewData['stats']           := LStats;
-  ViewData['inventory']       := LInventory;
-  ViewData['steps']           := LStepsArr;
+  ViewData['adventure']            := LAdvObj;
+  ViewData['adventure_id']         := IntToStr(LAdv.Id);
+  ViewData['book_title']           := LBookTitle;
+  ViewData['current_section']      := IntToStr(LCurrentSection);
+  ViewData['stats']                := LStats;
+  ViewData['inventory']            := LInventory;
+  ViewData['steps']                := LStepsArr;
+  ViewData['spells_panel_visible'] := Length(LSpellSnapshot) > 0;
+  ViewData['spells_available']     := LSpellAvailArr;
+  ViewData['spells_consumed']      := LSpellConsumedArr;
+  ViewData['spells_available_none'] := LSpellAvailArr.Count = 0;
+  ViewData['spells_consumed_any']  := LSpellConsumedAny;
 
   Render(RenderView('pages/adventures/play'));
 end;

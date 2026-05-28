@@ -135,6 +135,7 @@
         <DCCReference Include="..\controllers\Controllers.InventoryU.pas"/>
         <DCCReference Include="..\controllers\Controllers.DiceU.pas"/>
         <DCCReference Include="..\controllers\Controllers.GraphU.pas"/>
+        <DCCReference Include="..\controllers\Controllers.SpellsU.pas"/>
         <DCCReference Include="..\models\Models.DiceRollU.pas"/>
         <DCCReference Include="..\repositories\Repositories.DiceRollsU.pas"/>
         <DCCReference Include="..\webmodule\WebModuleU.pas">
