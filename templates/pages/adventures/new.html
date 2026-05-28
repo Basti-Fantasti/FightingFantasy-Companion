@@ -7,7 +7,12 @@
     <label class="label">{{:l10n.adv_select_book}}</label>
     <div class="control">
       <div class="select">
-        <select name="book_id" required>
+        <select name="book_id" required
+                hx-get="/adventures/new/sections"
+                hx-trigger="change"
+                hx-target="#book-sections"
+                hx-swap="innerHTML"
+                hx-include="this">
           {{for book in books}}
             <option value="{{:book.id}}">{{:book.title}}</option>
           {{endfor}}
@@ -16,12 +21,7 @@
     </div>
   </div>
 
-  <div class="field">
-    <label class="label">{{:l10n.adv_title_label}}</label>
-    <div class="control">
-      <input class="input" name="title" required>
-    </div>
-  </div>
+  <div id="book-sections"></div>
 
   {{if error}}<div class="notification is-danger">{{:error}}</div>{{endif}}
 

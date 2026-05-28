@@ -447,10 +447,18 @@ var
   LStatsArr, LGearArr, LSpellsArr: TJsonArray;
   LObj: TJsonObject;
   LIdx: Integer;
-  LLang: string;
+  LLang, LDefaultLang: string;
+  LStatTitles: TArray<TStatDefTitle>;
+  LStatTitle: TStatDefTitle;
+  LStatTitleDict: TDictionary<string, string>;
+  LSpellTitles: TArray<TSpellDefTitle>;
+  LSpellTitleNames, LSpellTitleDescs: TDictionary<string, string>;
+  LSpellTitle: TSpellDefTitle;
+  LSpellBudget: Integer;
 begin
   RequireLogin;
   LLang := ViewData['current_lang'].AsString;
+  LDefaultLang := TAppConfig.DefaultLanguage;
 
   LBookIdStr := Context.Request.QueryStringParam('book_id');
   LBookId := StrToInt64Def(LBookIdStr, 0);
@@ -477,49 +485,86 @@ begin
     LStatDefs := LBookRepo.GetStatDefs(LBookId);
     LSpells   := LSpellRepo.ListByBook(LBookId);
     LGearRows := LItemsRepo.ListByBookLocalized(LBookId, LLang);
+
+    LStatsArr  := TJsonArray.Create;
+    LGearArr   := TJsonArray.Create;
+    LSpellsArr := TJsonArray.Create;
+    // ViewData takes ownership of the arrays.
+
+    // Stats: resolve a localised display_name for each stat def using the
+    // same fallback chain as the play view (current lang -> default lang ->
+    // machine name).
+    LSpellBudget := 0;
+    for LIdx := 0 to High(LStatDefs) do
+    begin
+      LStatTitleDict := TDictionary<string, string>.Create;
+      try
+        LStatTitles := LBookRepo.GetStatDefTitles(LStatDefs[LIdx].Id);
+        for LStatTitle in LStatTitles do
+          LStatTitleDict.AddOrSetValue(LStatTitle.Lang, LStatTitle.DisplayName);
+        LObj := LStatsArr.AddObject;
+        LObj.L['id']            := LStatDefs[LIdx].Id;
+        LObj.S['display_name']  := TLocalizedTitleService.Pick(LStatTitleDict,
+          LLang, LDefaultLang, LStatDefs[LIdx].Name);
+        LObj.S['default_value'] := LStatDefs[LIdx].DefaultValue;
+      finally
+        LStatTitleDict.Free;
+      end;
+      // Capture the default magic value so the template can render the
+      // spell-picker budget.
+      if SameText(LStatDefs[LIdx].Name, 'magic') then
+        LSpellBudget := StrToIntDef(LStatDefs[LIdx].DefaultValue, 0);
+    end;
+
+    for LIdx := 0 to High(LGearRows) do
+    begin
+      LObj := LGearArr.AddObject;
+      LObj.S['slug']         := LGearRows[LIdx].Slug;
+      LObj.S['display_name'] := LGearRows[LIdx].DisplayName;
+      LObj.I['quantity']     := LGearRows[LIdx].Quantity;
+    end;
+
+    // Spells: resolve display_name + description per spell, preferring the
+    // current language and falling back to any available title row (mirrors
+    // the four-step pattern used elsewhere but lighter — we just want
+    // something readable in the picker).
+    for LIdx := 0 to High(LSpells) do
+    begin
+      LSpellTitleNames := TDictionary<string, string>.Create;
+      LSpellTitleDescs := TDictionary<string, string>.Create;
+      try
+        LSpellTitles := LSpellRepo.ListTitles(LSpells[LIdx].Id);
+        for LSpellTitle in LSpellTitles do
+        begin
+          LSpellTitleNames.AddOrSetValue(LSpellTitle.Lang, LSpellTitle.DisplayName);
+          LSpellTitleDescs.AddOrSetValue(LSpellTitle.Lang, LSpellTitle.Description);
+        end;
+        LObj := LSpellsArr.AddObject;
+        LObj.L['id']           := LSpells[LIdx].Id;
+        LObj.S['display_name'] := TLocalizedTitleService.Pick(LSpellTitleNames,
+          LLang, LDefaultLang, LSpells[LIdx].Slug);
+        LObj.S['description']  := TLocalizedTitleService.Pick(LSpellTitleDescs,
+          LLang, LDefaultLang, '');
+      finally
+        LSpellTitleDescs.Free;
+        LSpellTitleNames.Free;
+      end;
+    end;
   finally
     LItemsRepo.Free;
     LSpellRepo.Free;
     LBookRepo.Free;
   end;
 
-  LStatsArr  := TJsonArray.Create;
-  LGearArr   := TJsonArray.Create;
-  LSpellsArr := TJsonArray.Create;
-  // ViewData takes ownership of the arrays.
+  ViewData['book_id']        := LBookIdStr;
+  ViewData['stats']          := LStatsArr;
+  ViewData['gear']           := LGearArr;
+  ViewData['spells']         := LSpellsArr;
+  ViewData['spell_budget']   := IntToStr(LSpellBudget);
+  ViewData['spells_present'] := Length(LSpells) > 0;
+  ViewData['gear_present']   := Length(LGearRows) > 0;
 
-  for LIdx := 0 to High(LStatDefs) do
-  begin
-    LObj := LStatsArr.AddObject;
-    LObj.L['id']   := LStatDefs[LIdx].Id;
-    LObj.S['name'] := LStatDefs[LIdx].Name;
-  end;
-
-  for LIdx := 0 to High(LGearRows) do
-  begin
-    LObj := LGearArr.AddObject;
-    LObj.S['slug']         := LGearRows[LIdx].Slug;
-    LObj.S['display_name'] := LGearRows[LIdx].DisplayName;
-    LObj.I['quantity']     := LGearRows[LIdx].Quantity;
-  end;
-
-  for LIdx := 0 to High(LSpells) do
-  begin
-    LObj := LSpellsArr.AddObject;
-    LObj.L['id']   := LSpells[LIdx].Id;
-    LObj.S['slug'] := LSpells[LIdx].Slug;
-  end;
-
-  ViewData['book_id'] := LBookIdStr;
-  ViewData['stats']   := LStatsArr;
-  ViewData['gear']    := LGearArr;
-  ViewData['spells']  := LSpellsArr;
-
-  // The real template lands in Task 13; render a minimal placeholder so the
-  // route exists end-to-end without crashing if the template file is absent.
-  Render('<div data-testid="new-sections-placeholder">' +
-    'Book-specific sections placeholder &mdash; implemented in Task 13' +
-    '</div>');
+  Render(RenderView('pages/adventures/_new_sections'));
 end;
 
 procedure TAdventuresController.Play(Id: Int64);
