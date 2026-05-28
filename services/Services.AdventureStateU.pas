@@ -55,6 +55,10 @@ type
     Kind: string;
     /// <summary>Current value as a string, ready for rendering.</summary>
     Value: string;
+    /// <summary>Starting (default) value from the stat definition, unchanged
+    ///   by replayed stat_changes. Useful for showing the player how far the
+    ///   current value has drifted from character creation.</summary>
+    StartValue: string;
   end;
 
   /// <summary>
@@ -198,6 +202,7 @@ var
   LChange: TStatChange;
   LSnapshot: TStatSnapshot;
   LValues: TDictionary<Int64, string>;
+  LStartValues: TDictionary<Int64, string>;
 begin
   Result := TList<TStatSnapshot>.Create;
   LAdvRepo := TAdventuresRepo.Create(FConn);
@@ -211,18 +216,24 @@ begin
   LBooksRepo := TBooksRepo.Create(FConn);
   LChangesRepo := TStatChangesRepo.Create(FConn);
   LValues := TDictionary<Int64, string>.Create;
+  LStartValues := TDictionary<Int64, string>.Create;
   try
     LDefs := LBooksRepo.GetStatDefs(LAdv.BookId);
-    // Seed every stat with its default value.
     for LDef in LDefs do
       LValues.AddOrSetValue(LDef.Id, LDef.DefaultValue);
 
     // Replay every non-undone change in chronological (seq, id) order so the
-    // last write wins per stat_def_id.
+    // last write wins per stat_def_id. The first change seen per stat is the
+    // adventure's starting value (entered on the setup step); FF stat_defs
+    // seed default_value=0 because real starting values are rolled per run.
     LChanges := LChangesRepo.ListByAdventure(AAdventureId, False);
     for LChange in LChanges do
       if LValues.ContainsKey(LChange.StatDefId) then
+      begin
+        if not LStartValues.ContainsKey(LChange.StatDefId) then
+          LStartValues.Add(LChange.StatDefId, LChange.NewValue);
         LValues[LChange.StatDefId] := LChange.NewValue;
+      end;
 
     // Build snapshots in stat-def order with localised display names.
     for LDef in LDefs do
@@ -240,9 +251,12 @@ begin
       end;
       LSnapshot.Kind  := LDef.Kind;
       LSnapshot.Value := LValues[LDef.Id];
+      if not LStartValues.TryGetValue(LDef.Id, LSnapshot.StartValue) then
+        LSnapshot.StartValue := LDef.DefaultValue;
       Result.Add(LSnapshot);
     end;
   finally
+    LStartValues.Free;
     LValues.Free;
     LChangesRepo.Free;
     LBooksRepo.Free;

@@ -26,6 +26,8 @@
     {{include "../../partials/_dice_panel.html"}}
   </div>
   <div class="column">
+    {{include "../../partials/_step_form.html"}}
+    <hr>
     <div class="tabs">
       <ul>
         <li id="tab-timeline-li" class="is-active"><a id="tab-timeline" onclick="document.getElementById('timeline-area').style.display='';document.getElementById('graph-area').style.display='none';document.getElementById('tab-timeline-li').classList.add('is-active');document.getElementById('tab-graph-li').classList.remove('is-active');">{{:l10n.tab_timeline}}</a></li>
@@ -34,8 +36,6 @@
     </div>
     {{include "../../partials/_timeline.html"}}
     {{include "../../partials/_graph_tab.html"}}
-    <hr>
-    {{include "../../partials/_step_form.html"}}
   </div>
 </div>
 <div id="modal-host"></div>
@@ -50,9 +50,15 @@
     const r = await fetch('/adventures/' + window.ffAdventureId + '/graph.json');
     if (!r.ok) return;
     const data = await r.json();
+    // Place nodes left-to-right by first_seq so the visual order matches the
+    // playthrough order. Revisits don't create new nodes, so positions stay
+    // stable; back-edges draw as visible arcs over the row.
+    const xSpacing = 110;
+    const yBase = 120;
     const elements = [
       ...data.nodes.map(n => ({
         data: { id: n.id, label: '§' + n.section, visits: n.visits },
+        position: { x: n.first_seq * xSpacing, y: yBase },
         classes: (n.section === data.current ? 'current ' : '') + (n.visits > 1 ? 'revisit' : '')
       })),
       ...data.edges.map(e => ({
@@ -83,21 +89,30 @@
               'border-color': '#ff3860'
           }},
           { selector: 'edge', style: {
-              'curve-style': 'bezier',
+              // unbundled-bezier with a fixed control point above the row
+              // arcs every edge upward so collinear forward edges become
+              // visible curves and back-edges (e.g. s300->s2) clear the
+              // forward path instead of overlapping it.
+              'curve-style': 'unbundled-bezier',
+              'control-point-distances': [-50],
+              'control-point-weights': [0.5],
               'target-arrow-shape': 'triangle',
-              'arrow-scale': 0.8,
+              'arrow-scale': 1.1,
               'label': 'data(label)',
-              'font-size': 8,
-              'width': 1.5,
+              'font-size': 9,
+              'text-background-color': '#fff',
+              'text-background-opacity': 1,
+              'text-background-padding': 2,
+              'width': 2,
               'line-color': '#7a7a7a',
               'target-arrow-color': '#7a7a7a'
           }}
         ],
-        layout: { name: 'cose', animate: true, fit: true, padding: 30 }
+        layout: { name: 'preset', fit: true, padding: 30 }
       });
     } else {
       ffCy.json({ elements: elements });
-      ffCy.layout({ name: 'cose', animate: true }).run();
+      ffCy.layout({ name: 'preset', fit: true, padding: 30 }).run();
     }
   };
 

@@ -14,7 +14,7 @@
       <input class="input is-large has-text-centered" type="number" value="{{:working}}"
              hx-post="{{:preview_url}}" hx-trigger="change" hx-target="#modal-host"
              hx-vals='{"stat_def_id":"{{:stat_def_id}}","original":"{{:original}}","delta":"0","reason":"{{:reason}}"}' name="working">
-      <p class="has-text-grey">(was {{:original}} &bull; &Delta; {{:delta_display}})</p>
+      <p class="has-text-grey">(start {{:start_value}} &bull; was {{:original}} &bull; &Delta; {{:delta_display}})</p>
       <div class="buttons is-centered">
         <button class="button is-large is-touch"
                 hx-post="{{:preview_url}}" hx-target="#modal-host"

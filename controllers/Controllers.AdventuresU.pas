@@ -50,6 +50,8 @@ type
   /// </summary>
   [MVCPath('')]
   TAdventuresController = class(TBaseController)
+  strict private
+    procedure RenderNewForm(const AError: string);
   public
     /// <summary>
     ///   Dashboard at /. Lists the current user's adventures split into
@@ -149,8 +151,6 @@ const
   CISODateFmt      = 'yyyy-mm-dd';
 
 resourcestring
-  SBookRequired   = 'A book must be selected.';
-  STitleRequired  = 'Adventure title is required.';
   SInvalidBook    = 'Invalid book selection.';
   SInvalidStatus  = 'Invalid status value.';
   SAdventureGone  = 'Adventure not found.';
@@ -242,6 +242,18 @@ begin
 end;
 
 procedure TAdventuresController.GetNew;
+begin
+  RequireLogin;
+  RenderNewForm('');
+end;
+
+/// <summary>
+///   Renders the new-adventure form with the user's available books and an
+///   optional error message shown in a notification banner above the form.
+///   Shared between GetNew (no error) and PostCreate validation failures so
+///   the user sees a properly chromed page instead of a bare error string.
+/// </summary>
+procedure TAdventuresController.RenderNewForm(const AError: string);
 var
   LBookRepo: TBooksRepo;
   LBooks: TArray<TBook>;
@@ -250,7 +262,6 @@ var
   LObj: TJsonObject;
   LCurrentLang, LDefaultLang: string;
 begin
-  RequireLogin;
   LCurrentLang := ViewData['current_lang'].AsString;
   LDefaultLang := TAppConfig.DefaultLanguage;
 
@@ -270,7 +281,7 @@ begin
   end;
 
   ViewData['books'] := LArr;
-  ViewData['error'] := '';
+  ViewData['error'] := AError;
   Render(RenderView('pages/adventures/new'));
 end;
 
@@ -329,13 +340,13 @@ begin
   if LBookId <= 0 then
   begin
     Context.Response.StatusCode := HTTP_STATUS.BadRequest;
-    Render(SBookRequired);
+    RenderNewForm(L10n('adv_error_book_required'));
     Exit;
   end;
   if LTitle = '' then
   begin
     Context.Response.StatusCode := HTTP_STATUS.BadRequest;
-    Render(STitleRequired);
+    RenderNewForm(L10n('adv_error_title_required'));
     Exit;
   end;
 
@@ -343,7 +354,7 @@ begin
     CurrentUserId, LBookId) then
   begin
     Context.Response.StatusCode := HTTP_STATUS.BadRequest;
-    Render(SInvalidBook);
+    RenderNewForm(L10n('adv_error_invalid_book'));
     Exit;
   end;
 
@@ -426,7 +437,7 @@ begin
       on E: EAdventureCreateError do
       begin
         Context.Response.StatusCode := HTTP_STATUS.BadRequest;
-        Render(E.Message);
+        RenderNewForm(E.Message);
         Exit;
       end;
     end;
@@ -510,11 +521,13 @@ begin
         LObj.S['display_name']  := TLocalizedTitleService.Pick(LStatTitleDict,
           LLang, LDefaultLang, LStatDefs[LIdx].Name);
         LObj.S['default_value'] := LStatDefs[LIdx].DefaultValue;
+        LObj.B['is_magic']      := SameText(LStatDefs[LIdx].Name, 'magic');
       finally
         LStatTitleDict.Free;
       end;
       // Capture the default magic value so the template can render the
-      // spell-picker budget.
+      // spell-picker budget. The picker reads the live input value via the
+      // is_magic flag above so the budget tracks edits to the stat input.
       if SameText(LStatDefs[LIdx].Name, 'magic') then
         LSpellBudget := StrToIntDef(LStatDefs[LIdx].DefaultValue, 0);
     end;
@@ -651,6 +664,7 @@ begin
         LStatObj.S['display_name'] := LStat.DisplayName;
         LStatObj.S['kind']         := LStat.Kind;
         LStatObj.S['value']        := LStat.Value;
+        LStatObj.S['start_value']  := LStat.StartValue;
         // Used by _stats_panel.html to decide between an editable button and a
         // read-only span. Kept as a pre-resolved Boolean to keep the template
         // logic trivial (independent of the TemplatePro filter syntax).

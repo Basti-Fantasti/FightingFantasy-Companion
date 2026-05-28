@@ -51,8 +51,11 @@ type
 
     /// <summary>
     ///   Returns the path to the YAML seed file containing initial book data.
+    ///   Reads env var SEED_YAML_PATH.
     /// </summary>
-    /// <returns>&lt;AppPath&gt;/data/books_seed.yaml.</returns>
+    /// <returns>
+    ///   The env var value if set; otherwise &lt;AppPath&gt;/data/books_seed.yaml.
+    /// </returns>
     class function SeedYamlPath: string;
 
     /// <summary>
@@ -104,8 +107,14 @@ begin
 end;
 
 class function TAppConfig.SeedYamlPath: string;
+var
+  LRaw: string;
 begin
-  Result := TPath.Combine(TPath.Combine(AppPath, 'data'), 'books_seed.yaml');
+  LRaw := GetEnvironmentVariable('SEED_YAML_PATH');
+  if LRaw.IsEmpty then
+    Result := TPath.Combine(TPath.Combine(AppPath, 'data'), 'books_seed.yaml')
+  else
+    Result := LRaw;
 end;
 
 end.

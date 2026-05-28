@@ -10,6 +10,7 @@
               hx-target="#modal-host" hx-swap="innerHTML">
         {{:stat.value}}
       </button>
+      <span class="has-text-grey is-size-7 ml-2">(start {{:stat.start_value}})</span>
       {{else}}
       <span>{{:stat.value}}</span>
       {{endif}}

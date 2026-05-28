@@ -183,7 +183,7 @@ var
   LStatList: TList<TStatSnapshot>;
   LStat: TStatSnapshot;
   LFound: Boolean;
-  LCurrentValue, LDisplayName: string;
+  LCurrentValue, LDisplayName, LStartValue: string;
   LCurrentLang, LDefaultLang: string;
 begin
   RequireLogin;
@@ -196,6 +196,7 @@ begin
   LFound := False;
   LCurrentValue := '';
   LDisplayName := '';
+  LStartValue := '';
   LStateSvc := TAdventureStateService.Create(CMainConnection);
   try
     LStatList := LStateSvc.GetStatsHistory(LAdv.Id, LCurrentLang, LDefaultLang);
@@ -205,6 +206,7 @@ begin
         begin
           LCurrentValue := LStat.Value;
           LDisplayName  := LStat.DisplayName;
+          LStartValue   := LStat.StartValue;
           LFound := True;
           Break;
         end;
@@ -225,6 +227,7 @@ begin
   ViewData['label']         := LDisplayName;
   ViewData['working']       := LCurrentValue;
   ViewData['original']      := LCurrentValue;
+  ViewData['start_value']   := LStartValue;
   ViewData['delta_display'] := #$00B1 + '0';
   ViewData['reason']        := '';
   ViewData['preview_url']   := '/adventures/' + IntToStr(LAdv.Id) + '/stats/preview';
@@ -244,7 +247,7 @@ var
   LSvc: TAdventureStateService;
   LList: TList<TStatSnapshot>;
   LSnap: TStatSnapshot;
-  LLabel: string;
+  LLabel, LStartValue: string;
 begin
   RequireLogin;
   if not TryLoadOwnedAdventure(AdvId, LAdv) then
@@ -261,6 +264,7 @@ begin
   // read so the title isn't blank — TAdventureStateService is the only
   // place that already handles the localisation fallback chain.
   LLabel := '';
+  LStartValue := '';
   LSvc := TAdventureStateService.Create(CMainConnection);
   try
     LList := LSvc.GetStatsHistory(LAdv.Id,
@@ -270,6 +274,7 @@ begin
         if LSnap.StatDefId = LStatDefId then
         begin
           LLabel := LSnap.DisplayName;
+          LStartValue := LSnap.StartValue;
           Break;
         end;
     finally
@@ -282,6 +287,7 @@ begin
   ViewData['label']         := LLabel;
   ViewData['working']       := IntToStr(LNewWorking);
   ViewData['original']      := IntToStr(LOriginal);
+  ViewData['start_value']   := LStartValue;
   ViewData['delta_display'] := FormatDelta(LNewWorking - LOriginal);
   ViewData['reason']        := AReason;
   ViewData['preview_url']   := '/adventures/' + IntToStr(LAdv.Id) + '/stats/preview';
@@ -388,6 +394,7 @@ begin
         LStatObj.S['display_name'] := LStat.DisplayName;
         LStatObj.S['kind']         := LStat.Kind;
         LStatObj.S['value']        := LStat.Value;
+        LStatObj.S['start_value']  := LStat.StartValue;
         LStatObj.B['is_integer']   := SameText(LStat.Kind, 'integer');
       end;
     finally

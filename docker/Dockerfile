@@ -18,15 +18,17 @@ COPY --chown=ff:ff bin/Linux64/Release/FFCompanion /app/FFCompanion
 COPY --chown=ff:ff templates /app/templates
 COPY --chown=ff:ff static    /app/static
 COPY --chown=ff:ff l10n      /app/l10n
-COPY --chown=ff:ff data/books_seed.yaml /app/data/books_seed.yaml
+COPY --chown=ff:ff data/books_seed.yaml /app/seed/books_seed.yaml
 
 RUN chmod +x /app/FFCompanion
 
 USER ff
 
-ENV HTTP_PORT=8080 \
+ENV TZ=Europe/Berlin \
+    HTTP_PORT=8080 \
     DEFAULT_LANGUAGE=de \
-    DATABASE_PATH=/app/data/ffcompanion.db
+    DATABASE_PATH=/app/data/ffcompanion.db \
+    SEED_YAML_PATH=/app/seed/books_seed.yaml
 
 EXPOSE 8080
 
