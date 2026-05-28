@@ -3,7 +3,7 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile
-    image: ghcr.io/basti-fantasti/fightingfantasy-companion:latest
+    image: ghcr.io/basti-fantasti/fightingfantasy-companion:${IMAGE_TAG}
     container_name: ffcompanion
     restart: unless-stopped
     ports:
