@@ -98,6 +98,7 @@
         <DCCReference Include="config\AppConfigU.pas"/>
         <DCCReference Include="controllers\Controllers.BaseU.pas"/>
         <DCCReference Include="repositories\Repositories.MigrationU.pas"/>
+        <DCCReference Include="repositories\Repositories.SpellDefsU.pas"/>
         <DCCReference Include="models\Models.UserU.pas"/>
         <DCCReference Include="models\Models.SessionU.pas"/>
         <DCCReference Include="repositories\Repositories.UsersU.pas"/>
