@@ -100,6 +100,11 @@ type
     /// </summary>
     /// <exception cref="EStepNotFound">When no row matches.</exception>
     function GetById(AStepId: Int64): TStep;
+
+    /// <summary>Inserts a synthetic kind='setup' step with NULL to_section
+    /// and seq=1. Used by the adventure-create transaction to host starting
+    /// inventory and initial stat snapshots.</summary>
+    function InsertSetup(AAdventureId: Int64): Int64;
   end;
 
 implementation
@@ -137,7 +142,12 @@ begin
     AStep.FromSection := 0
   else
     AStep.FromSection := LFromField.AsInteger;
-  AStep.ToSection := AQ.FieldByName('to_section').AsInteger;
+  if AQ.FieldByName('to_section').IsNull then
+    AStep.ToSection := 0
+  else
+    AStep.ToSection := AQ.FieldByName('to_section').AsInteger;
+  AStep.Kind := AQ.FieldByName('kind').AsString;
+  if AStep.Kind = '' then AStep.Kind := 'normal';
   AStep.Note := AQ.FieldByName('note').AsString;
   AStep.FlagFight := AQ.FieldByName('flag_fight').AsInteger <> 0;
   AStep.FlagItem := AQ.FieldByName('flag_item').AsInteger <> 0;
@@ -226,7 +236,7 @@ begin
   try
     LQ.Connection := LC;
     LSql :=
-      'SELECT id, adventure_id, seq, from_section, to_section, note, ' +
+      'SELECT id, adventure_id, seq, from_section, to_section, kind, note, ' +
       'flag_fight, flag_item, flag_stat, undone, created_at ' +
       'FROM steps WHERE adventure_id=:a';
     if not AIncludeUndone then
@@ -259,7 +269,7 @@ begin
   try
     LQ.Connection := LC;
     LSql :=
-      'SELECT id, adventure_id, seq, from_section, to_section, note, ' +
+      'SELECT id, adventure_id, seq, from_section, to_section, kind, note, ' +
       'flag_fight, flag_item, flag_stat, undone, created_at ' +
       'FROM steps WHERE adventure_id=:a';
     if not AIncludeUndone then
@@ -333,7 +343,7 @@ begin
   try
     LQ.Connection := LC;
     LQ.Open(
-      'SELECT id, adventure_id, seq, from_section, to_section, note, ' +
+      'SELECT id, adventure_id, seq, from_section, to_section, kind, note, ' +
       'flag_fight, flag_item, flag_stat, undone, created_at ' +
       'FROM steps WHERE id=:i', [AStepId]);
     if LQ.Eof then
@@ -341,6 +351,33 @@ begin
     ReadStepRow(LQ, Result);
   finally
     LQ.Free;
+    LC.Free;
+  end;
+end;
+
+function TStepsRepo.InsertSetup(AAdventureId: Int64): Int64;
+var
+  LC: TFDConnection;
+  LCreatedAt: string;
+begin
+  LC := NewConn(FConn);
+  try
+    LC.StartTransaction;
+    try
+      LCreatedAt := FormatDateTime(ISO_FMT, Now);
+      // setup steps always live at seq=1; the create service is responsible
+      // for guaranteeing this is the first step of the adventure.
+      LC.ExecSQL(
+        'INSERT INTO steps (adventure_id, seq, from_section, to_section, ' +
+        'kind, note, flag_fight, flag_item, flag_stat, undone, created_at) ' +
+        'VALUES (:a, 1, NULL, NULL, ''setup'', '''', 0, 0, 0, 0, :c)',
+        [AAdventureId, LCreatedAt]);
+      Result := LC.ExecSQLScalar('SELECT last_insert_rowid()');
+      LC.Commit;
+    except
+      LC.Rollback; raise;
+    end;
+  finally
     LC.Free;
   end;
 end;
