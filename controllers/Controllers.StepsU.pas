@@ -144,7 +144,8 @@ uses
   Repositories.AdventuresU,
   Repositories.StepsU,
   Repositories.InventoryEventsU,
-  Services.AdventureStateU;
+  Services.AdventureStateU,
+  Services.SpellU;
 
 const
   CMainConnection = 'FFMain';
@@ -361,6 +362,7 @@ var
   LStepsRepo: TStepsRepo;
   LInvEventsRepo: TInventoryEventsRepo;
   LStateSvc: TAdventureStateService;
+  LSpellSvc: TSpellService;
   LAdv: TAdventure;
   LStep: TStep;
   LList: TArray<TStep>;
@@ -412,6 +414,18 @@ begin
     end;
 
     LStepsRepo.SetUndone(ASId, AUndone);
+
+    // Revert any spell consumption attributed to this step when undoing.
+    // Redo intentionally does NOT auto-re-consume: the user re-casts manually.
+    if AUndone then
+    begin
+      LSpellSvc := TSpellService.Create(CMainConnection);
+      try
+        LSpellSvc.UndoForStep(ASId);
+      finally
+        LSpellSvc.Free;
+      end;
+    end;
 
     LList := LStepsRepo.ListByAdventure(AAdvId, True);
   finally
