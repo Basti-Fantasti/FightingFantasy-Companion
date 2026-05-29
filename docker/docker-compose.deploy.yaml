@@ -13,4 +13,7 @@ services:
       DATABASE_PATH: /app/data/ffcompanion.db
       SEED_YAML_PATH: /app/seed/books_seed.yaml
     volumes:
-      - ./data:/app/data
+      - ffcompanion-data:/app/data
+
+volumes:
+  ffcompanion-data:
